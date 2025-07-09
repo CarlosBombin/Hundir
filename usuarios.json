@@ -1,0 +1,47 @@
+[
+  {
+    "name": "admin",
+    "password": "admin123",
+    "esNuevo": false
+  },
+  {
+    "name": "user1",
+    "password": "user123",
+    "esNuevo": false
+  },
+  {
+    "name": "user2",
+    "password": "user456",
+    "esNuevo": false
+  },
+  {
+    "name": "maria",
+    "password": "maria123",
+    "esNuevo": false
+  },
+  {
+    "name": "carlos",
+    "password": "carlos456",
+    "esNuevo": false
+  },
+  {
+    "name": "Jose",
+    "password": "Jose",
+    "esNuevo": false
+  },
+  {
+    "name": "Pepe",
+    "password": "Pepe",
+    "esNuevo": false
+  },
+  {
+    "name": "Alonso",
+    "password": "Alonso",
+    "esNuevo": false
+  },
+  {
+    "name": "Juan",
+    "password": "Juan",
+    "esNuevo": false
+  }
+]
