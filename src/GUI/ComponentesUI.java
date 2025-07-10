@@ -244,7 +244,6 @@ public class ComponentesUI {
         });
     }
     
-    // Getters para obtener valores seleccionados
     public String getTipoBarcoSeleccionado() {
         return (String) comboTipoBarco.getSelectedItem();
     }
@@ -261,7 +260,6 @@ public class ComponentesUI {
         return (String) comboOrientacion.getSelectedItem();
     }
     
-    // Getters para componentes
     public JLabel getLabelEstado() {
         return labelEstado;
     }
@@ -282,17 +280,11 @@ public class ComponentesUI {
 
     public void limpiarSeleccion() {
         try {
-            // Usar los componentes reales con sus métodos apropiados
             if (spinnerFila != null) spinnerFila.setValue(0);
             if (spinnerColumna != null) spinnerColumna.setValue(0);
             if (comboOrientacion != null) comboOrientacion.setSelectedIndex(0);
             if (comboTipoBarco != null) comboTipoBarco.setSelectedIndex(0);
-            
-            System.out.println("[UI] Selección limpiada correctamente");
-        } catch (Exception e) {
-            System.err.println("[ERROR] Error limpiando selección: " + e.getMessage());
-            e.printStackTrace();
-        }
+        } catch (Exception e) {}
     }
 
     public void actualizarSelectorBarcos(Map<String, Integer> barcosRestantes) {

@@ -20,7 +20,6 @@ public class Tablero implements Cuadricula{
 	}
 
 	public void setBarco(Coordenadas id, Barco barco) {
-	    System.out.println("[DEBUG] setBarco: " + id + " -> " + barco.getClass().getSimpleName());
 	    getCasilla(id).setBarco(barco);
 	}
 
@@ -34,7 +33,6 @@ public class Tablero implements Cuadricula{
 		
 	public Casilla getCasilla(Coordenadas coordenadas) {
 	    if (cas == null) {
-	        System.out.println("[DEBUG] getCasilla: cas es null");
 	        return null;
 	    }
 	    for (int i = 0; i < cas.length; i++) {
@@ -44,15 +42,11 @@ public class Tablero implements Cuadricula{
 	            int colCasilla = casilla.getColumna();
 	            int filaCoord = coordenadas.getAbcisasAsInt();
 	            int colCoord = coordenadas.getOrdenadas();
-	            System.out.println("[DEBUG] Comparando casilla [" + i + "," + j + "] fila=" + filaCasilla + " col=" + colCasilla +
-	                " con coord fila=" + filaCoord + " col=" + colCoord);
 	            if (filaCasilla == filaCoord && colCasilla == colCoord) {
-	                System.out.println("[DEBUG] getCasilla: encontrada " + coordenadas + " en [" + i + "," + j + "]");
 	                return casilla;
 	            }
 	        }
 	    }
-	    System.out.println("[DEBUG] getCasilla: no encontrada " + coordenadas);
 	    return null;
 	}
 	

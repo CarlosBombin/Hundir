@@ -45,7 +45,6 @@ public class ValidadorColocacion {
             int checkFila = esHorizontal ? fila : fila + i;
             int checkColumna = esHorizontal ? columna + i : columna;
             boolean colision = existeBarcoEnPosicion(checkFila, checkColumna);
-            System.out.println("[DEBUG] Comprobando colisión en (" + checkFila + "," + checkColumna + "): " + colision);
             if (colision) {
                 return false;
             }
@@ -55,17 +54,13 @@ public class ValidadorColocacion {
     
     private boolean existeBarcoEnPosicion(int fila, int columna) {
         try {
-            System.out.println("[DEBUG] existeBarcoEnPosicion: fila=" + fila + " columna=" + columna);
             Coordenadas coordenadas = new Coordenadas((char)('A' + columna), fila);
-            System.out.println("[DEBUG] Coordenadas creadas: " + coordenadas);
             Casilla casilla = tablero.getCasilla(coordenadas);
-            System.out.println("[DEBUG] existeBarcoEnPosicion: " + coordenadas + " -> " + (casilla != null ? casilla.getEstado() : "NULL"));
             if (casilla == null) {
                 return true;
             }
             return casilla.getEstado() instanceof Estados.DesconocidoBarco;
         } catch (Exception e) {
-            System.out.println("[DEBUG] Excepción en existeBarcoEnPosicion: " + e.getMessage());
             return true;
         }
     }

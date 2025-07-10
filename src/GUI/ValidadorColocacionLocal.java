@@ -78,7 +78,6 @@ public class ValidadorColocacionLocal {
         return true;
     }
     
-    // CAMBIAR el método mostrarError para usar SwingUtilities:
     private void mostrarError(String mensaje) {
         SwingUtilities.invokeLater(() -> {
             JOptionPane.showMessageDialog(null, mensaje, "Error de Colocación", 

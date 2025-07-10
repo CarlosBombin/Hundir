@@ -42,20 +42,15 @@ public class Servidor {
     private static final ConcurrentHashMap<String, Connection> conexionesActivas = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        System.out.println("Servidor Hundir la Flota iniciado en puerto " + PUERTO);
-        System.out.println("Cargando usuarios existentes...");
-        
         cargarUsuariosExistentes();
         iniciarServidor();
     }
     
     private static void iniciarServidor() {
         try (ServerSocket listenSocket = new ServerSocket(PUERTO)) {
-            System.out.println("Servidor esperando conexiones...");
             
             while (!end) {
                 Socket clientSocket = listenSocket.accept();
-                System.out.println("Nueva conexión desde: " + clientSocket.getInetAddress());
                 Connection connection = new Connection(clientSocket);
                 connection.start();
             }
@@ -68,7 +63,6 @@ public class Servidor {
     private static void cargarUsuariosExistentes() {
         try {
             List<Usuario> usuarios = leer.getUsuarios().leer();
-            System.out.println("Usuarios cargados: " + usuarios.size());
         } catch (Exception e) {
             System.out.println("No se pudieron cargar usuarios existentes: " + e.getMessage());
         }
@@ -105,7 +99,6 @@ public class Servidor {
             
             Usuario nuevoUsuario = new Usuario(nombre, contraseña);
             guardadorUsuarios.guardar(nuevoUsuario);
-            System.out.println("Usuario registrado: " + nombre);
             return true;
             
         } catch (Exception e) {
@@ -116,12 +109,10 @@ public class Servidor {
     
     public static synchronized void conectarUsuario(String nombre, Usuario usuario) {
         usuariosConectados.put(nombre, usuario);
-        System.out.println("Usuario conectado: " + nombre + " (Total: " + usuariosConectados.size() + ")");
     }
     
     public static synchronized void desconectarUsuario(String nombre) {
         usuariosConectados.remove(nombre);
-        System.out.println("Usuario desconectado: " + nombre + " (Total: " + usuariosConectados.size() + ")");
     }
     
     public static synchronized boolean usuarioConectado(String nombre) {
@@ -134,7 +125,6 @@ public class Servidor {
         Partida partida = new Partida(creador, null);
         partidasActivas.put(idPartida, partida);
         
-        System.out.println("Partida creada: " + idPartida + " por " + creador.getName());
         return idPartida;
     }
     
@@ -159,8 +149,6 @@ public class Servidor {
             partidasActivas.put(idPartida, partidaCompleta);
             
             guardar.setPartidas().guardar(partidaCompleta);
-            
-            System.out.println("Partida iniciada: " + partida.getUsuarioPrincipal().getName() + " vs " + jugador.getName());
             return true;
         }
         
@@ -174,8 +162,12 @@ public class Servidor {
     public static synchronized void finalizarPartida(String idPartida) {
         Partida partida = partidasActivas.remove(idPartida);
         if (partida != null) {
-            guardar.setPartidas().guardar(partida);
-            System.out.println("Partida finalizada: " + idPartida);
+            try {
+                Persistencia.Partidas.GuardarPartidasJson guardador = new Persistencia.Partidas.GuardarPartidasJson();
+                guardador.actualizarPartida(partida);
+            } catch (Exception e) {
+                System.err.println("Error actualizando partida: " + e.getMessage());
+            }
         }
     }
     
@@ -206,7 +198,6 @@ public class Servidor {
         if (estado == null) {
             estado = new EstadoColocacion();
             estadosColocacion.put(idPartida, estado);
-            System.out.println("Nuevo estado de colocación creado para partida: " + idPartida);
         }
         return estado;
     }
@@ -215,8 +206,6 @@ public class Servidor {
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) return false;
         boolean esTurno = usuario.equals(partida.getTurnoActual());
-        System.out.println("[DEBUG] esTurnoDeUsuario: " + usuario.getName() + " -> " + esTurno + " (turno actual: " +
-            (partida.getTurnoActual() != null ? partida.getTurnoActual().getName() : "null") + ")");
         return esTurno;
     }
 
@@ -278,7 +267,6 @@ public class Servidor {
     public static boolean usuarioCompletoColocacion(String idPartida, Usuario usuario) {
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) {
-            System.out.println("[DEBUG] usuarioCompletoColocacion: partida no encontrada para " + idPartida);
             return false;
         }
 
@@ -286,18 +274,11 @@ public class Servidor {
         boolean esPrincipal = usuario.equals(partida.getUsuarioPrincipal());
         ContadorBarcosJugador contador = estado.getContador(esPrincipal);
 
-        System.out.println("[DEBUG] usuarioCompletoColocacion para " + usuario.getName() + ": " +
-            "Portaviones=" + contador.getPortaviones() +
-            ", Submarinos=" + contador.getSubmarinos() +
-            ", Destructores=" + contador.getDestructores() +
-            ", Fragatas=" + contador.getFragatas());
-
         boolean completo = contador.getPortaviones() == 1 &&
                            contador.getSubmarinos() == 2 &&
                            contador.getDestructores() == 3 &&
                            contador.getFragatas() == 4;
 
-        System.out.println("[DEBUG] usuarioCompletoColocacion: " + usuario.getName() + " completo=" + completo);
         return completo;
     }
 
@@ -319,16 +300,13 @@ public class Servidor {
     }
 
     public static boolean finalizarColocacionUsuario(String idPartida, Usuario usuario) {
-        System.out.println("[DEBUG] Finalizando colocación para " + usuario.getName() + " en partida " + idPartida);
         boolean completo = usuarioCompletoColocacion(idPartida, usuario);
-        System.out.println("[DEBUG] ¿Ha colocado todos los barcos? " + completo);
         return completo;
     }
 
     public static boolean ambosJugadoresListos(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) {
-            System.out.println("[DEBUG] ambosJugadoresListos: partida no encontrada");
             return false;
         }
         Usuario principal = partida.getUsuarioPrincipal();
@@ -336,18 +314,12 @@ public class Servidor {
         boolean principalListo = usuarioCompletoColocacion(idPartida, principal);
         boolean rivalListo = rival != null && usuarioCompletoColocacion(idPartida, rival);
 
-        System.out.println("[DEBUG] ambosJugadoresListos: principal=" + (principal != null ? principal.getName() : "null") +
-            " listo=" + principalListo + ", rival=" + (rival != null ? rival.getName() : "null") +
-            " listo=" + rivalListo);
-
         return principalListo && rivalListo;
     }
 
     public static boolean colocarBarco(String idPartida, Usuario usuario, String tipoBarco, int fila, int columna, String orientacion) {
-        System.out.println("[DEBUG] colocarBarco: " + tipoBarco + " (" + fila + "," + columna + ") " + orientacion + " para " + usuario.getName());
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) {
-            System.out.println("[DEBUG] Partida no encontrada");
             return false;
         }
 
@@ -357,30 +329,25 @@ public class Servidor {
 
         TipoBarco tipo = TipoBarco.fromString(tipoBarco);
         if (tipo == null) {
-            System.out.println("[DEBUG] Tipo de barco no válido: " + tipoBarco);
             return false;
         }
 
         if (!contador.puedeColocarBarco(tipo)) {
-            System.out.println("[DEBUG] Límite alcanzado para " + tipoBarco);
             return false;
         }
 
         Tablero tablero = partida.getTableroJugador(usuario);
         if (tablero == null) {
-            System.out.println("[DEBUG] Tablero no encontrado para usuario");
             return false;
         }
 
         boolean exito = colocarBarcoEnTablero(tablero, tipoBarco, fila, columna, orientacion);
-        System.out.println("[DEBUG] Resultado colocarBarcoEnTablero: " + exito);
 
         if (!exito) {
             return false;
         }
 
         contador.colocarBarco(tipo);
-        System.out.println("[DEBUG] Barco colocado y contador actualizado");
         return true;
     }
 
@@ -398,7 +365,6 @@ public class Servidor {
     public static void guardarPartida(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) {
-            System.out.println("[DEBUG] guardarPartida: partida no encontrada para " + idPartida);
             return;
         }
         try {
@@ -406,40 +372,29 @@ public class Servidor {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             String json = gson.toJson(partida);
             Files.write(Paths.get(nombreArchivo), json.getBytes(StandardCharsets.UTF_8));
-            System.out.println("[DEBUG] Partida guardada en " + nombreArchivo);
-        } catch (Exception e) {
-            System.err.println("[DEBUG] Error guardando partida: " + e.getMessage());
-        }
+        } catch (Exception e) {}
     }
 
-    // Cuando crees una Connection, regístrala:
     public static void registrarConexion(String nombreUsuario, Connection conexion) {
         conexionesActivas.put(nombreUsuario, conexion);
     }
 
-    // Cuando un usuario se desconecte, elimínala:
     public static void eliminarConexion(String nombreUsuario) {
         conexionesActivas.remove(nombreUsuario);
     }
 
-    /**
-     * Devuelve la Connection del rival en la partida, o null si no está conectado.
-     */
     public static Connection getConexionRival(String idPartida, Usuario usuarioActual) {
         Partida partida = obtenerPartida(idPartida);
         if (partida == null) {
-            System.out.println("[DEBUG] getConexionRival: partida no encontrada para " + idPartida);
             return null;
         }
         Usuario rival = usuarioActual.equals(partida.getUsuarioPrincipal())
             ? partida.getUsuarioRival()
             : partida.getUsuarioPrincipal();
         if (rival == null) {
-            System.out.println("[DEBUG] getConexionRival: rival es null");
             return null;
         }
         Connection conn = conexionesActivas.get(rival.getName());
-        System.out.println("[DEBUG] getConexionRival: buscando conexión para " + rival.getName() + " -> " + (conn != null ? "ENCONTRADA" : "NO ENCONTRADA"));
         return conn;
     }
 
@@ -456,43 +411,34 @@ public class Servidor {
 
         Casilla casilla = tableroDefensor.getCasilla(coords);
         if (casilla == null) {
-            System.out.println("[DEBUG] getCasilla: no encontrada " + fila + "," + columna);
             return "error:Coordenada inválida";
         }
 
         Estado estadoAntes = casilla.getEstado();
-        System.out.println("[DEBUG] procesarAtaque: atacante=" + atacante.getName() + " coords=" + fila + "," + columna);
-        System.out.println("[DEBUG] Estado antes: " + estadoAntes.getClass().getSimpleName());
-
-        // Si ya fue atacada
+        
         if (estadoAntes.equals(Estados.Agua.getInstancia()) || estadoAntes.equals(Estados.Tocado.getInstancia())) {
-            System.out.println("[DEBUG] Casilla ya atacada o es agua: " + fila + "," + columna);
             return "error:Casilla ya atacada";
         }
 
         casilla.getDaño();
         Estado estadoDespues = casilla.getEstado();
-        System.out.println("[DEBUG] Estado después: " + estadoDespues.getClass().getSimpleName());
-
-        // Si era DesconocidoAgua y ahora es Agua, es agua
+        
         if (estadoAntes instanceof Estados.DesconocidoAgua && estadoDespues.equals(Estados.Agua.getInstancia())) {
             return "agua";
         }
-        // Si era DesconocidoBarco y ahora es Tocado, es tocado/hundido
+        
         if (estadoAntes instanceof Estados.DesconocidoBarco && estadoDespues.equals(Estados.Tocado.getInstancia())) {
             Barco barco = casilla.getBarco();
             if (barco != null && barco.estaHundido()) {
-                System.out.println("[DEBUG] Barco hundido en " + fila + "," + columna);
                 return "hundido";
             }
             return "tocado";
         }
-        // Si tras el ataque es hundido (si tienes ese estado)
+        
         if (estadoDespues.getClass().getSimpleName().contains("Hundido")) {
             return "hundido";
         }
 
-        System.out.println("[DEBUG] Estado inesperado tras ataque: " + estadoDespues.getClass().getSimpleName());
         return "error:Estado inesperado";
     }
 }

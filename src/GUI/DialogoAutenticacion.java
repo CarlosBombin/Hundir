@@ -42,14 +42,12 @@ public class DialogoAutenticacion extends JDialog {
         btnAceptar = new JButton("Aceptar");
         btnCancelar = new JButton("Cancelar");
         
-        // Enter en password = clic en aceptar
         txtPassword.addActionListener(e -> btnAceptar.doClick());
     }
     
     private void configurarLayout() {
         setLayout(new BorderLayout());
         
-        // Panel central con campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -74,14 +72,12 @@ public class DialogoAutenticacion extends JDialog {
         
         add(panelCampos, BorderLayout.CENTER);
         
-        // Panel inferior con botones
         JPanel panelBotones = new JPanel(new FlowLayout());
         panelBotones.add(btnAceptar);
         panelBotones.add(btnCancelar);
         
         add(panelBotones, BorderLayout.SOUTH);
         
-        // Título
         JLabel lblTitulo = new JLabel("Hundir la Flota - Autenticación", JLabel.CENTER);
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
         lblTitulo.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));

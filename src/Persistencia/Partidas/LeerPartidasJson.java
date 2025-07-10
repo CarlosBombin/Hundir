@@ -76,7 +76,6 @@ public class LeerPartidasJson implements LeerPartidas {
             return gson.fromJson(contenido, Partida.class);
             
         } catch (Exception e) {
-            System.err.println("Error al cargar partida " + idPartida + ": " + e.getMessage());
             return null;
         }
     }

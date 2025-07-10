@@ -20,23 +20,20 @@ public class ManejadorTablero {
     private JButton[][] botonesTablero;
     private JPanel tableroPanel;
     
-    // AGREGAR estos campos a la clase:
     private List<Point> seleccionActual = new ArrayList<>();
     private List<Point> casillasOcupadas = new ArrayList<>();
-    private int[] barcosPendientes = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1}; // Portaviones, Submarinos, Destructores, Fragatas
+    private int[] barcosPendientes = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1}; 
     private int barcoActual = 0;
-    private JLabel labelEstado; // Para mostrar indicaciones
+    private JLabel labelEstado;
     private Consumer<ColocacionBarco> barcoColocadoListener;
     
     public ManejadorTablero(int tamaño) {
         this.tamaño = tamaño;
     }
     
-    // MÉTODO para establecer dependencias
     public void setDependencias(JLabel labelEstado, Consumer<ColocacionBarco> barcoColocadoListener) {
         this.labelEstado = labelEstado;
         this.barcoColocadoListener = barcoColocadoListener;
-        // Actualizar etiqueta inicial
         if (labelEstado != null && barcoActual < barcosPendientes.length) {
             labelEstado.setText("Coloque barco de " + barcosPendientes[barcoActual] + " casillas");
         }
@@ -57,7 +54,7 @@ public class ManejadorTablero {
             }
         }
         
-        verificarVariables(); // Verificar variables después de crear el tablero
+        verificarVariables();
     }
     
     private JButton crearBotonCasilla(int fila, int columna, BiConsumer<Integer, Integer> onCasillaClick) {
@@ -73,9 +70,6 @@ public class ManejadorTablero {
         return boton;
     }
     
-    /**
-     * Marca visualmente un barco en el tablero
-     */
     public void marcarBarco(ColocacionBarco colocacion) {
         try {
             int fila = colocacion.getFila();
@@ -83,28 +77,25 @@ public class ManejadorTablero {
             String tipoBarco = colocacion.getTipoBarco();
             String orientacion = colocacion.getOrientacion();
             
-            System.out.println("[TABLERO] Marcando barco: " + tipoBarco + " en [" + fila + "," + columna + "] " + orientacion);
-            
-            // Determinar longitud y color según tipo
             int longitud;
             Color colorBarco;
             
             switch (tipoBarco.toUpperCase()) {
                 case "PORTAVIONES":
                     longitud = 4;
-                    colorBarco = new Color(255, 0, 0); // Rojo
+                    colorBarco = new Color(255, 0, 0);
                     break;
                 case "SUBMARINO":
                     longitud = 3;
-                    colorBarco = new Color(0, 0, 255); // Azul
+                    colorBarco = new Color(0, 0, 255);
                     break;
                 case "DESTRUCTOR":
                     longitud = 2;
-                    colorBarco = new Color(0, 128, 0); // Verde
+                    colorBarco = new Color(0, 128, 0); 
                     break;
                 case "FRAGATA":
                     longitud = 1;
-                    colorBarco = new Color(255, 165, 0); // Naranja
+                    colorBarco = new Color(255, 165, 0);
                     break;
                 default:
                     longitud = 1;
@@ -112,7 +103,6 @@ public class ManejadorTablero {
                     break;
             }
             
-            // CORRECCIÓN CRÍTICA: Usar botonesTablero y no hacer referencia a casillas
             if (orientacion.equalsIgnoreCase("HORIZONTAL")) {
                 for (int c = columna; c < columna + longitud && c < tamaño; c++) {
                     System.out.println("  - Marcando casilla [" + fila + "," + c + "]");
@@ -123,7 +113,7 @@ public class ManejadorTablero {
                     botonesTablero[fila][c].setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
                     botonesTablero[fila][c].repaint();
                 }
-            } else { // VERTICAL
+            } else {
                 for (int f = fila; f < fila + longitud && f < tamaño; f++) {
                     System.out.println("  - Marcando casilla [" + f + "," + columna + "]");
                     botonesTablero[f][columna].setBackground(colorBarco);
@@ -135,7 +125,6 @@ public class ManejadorTablero {
                 }
             }
             
-            // CORRECCIÓN CRÍTICA: Repintar el panel completo sin redundancias
             SwingUtilities.invokeLater(() -> {
                 if (tableroPanel != null) {
                     tableroPanel.repaint();
@@ -213,23 +202,18 @@ public class ManejadorTablero {
         System.out.println("=======================================");
     }
     
-    // REEMPLAZAR método para manejar clicks:
     public void manejarClick(int fila, int columna) {
         Point punto = new Point(fila, columna);
         
-        // Ignorar click en casilla ya ocupada o seleccionada
         if (casillasOcupadas.contains(punto) || seleccionActual.contains(punto)) {
             return;
         }
         
-        // Agregar a selección actual
         seleccionActual.add(punto);
-        botonesTablero[fila][columna].setBackground(new Color(144, 238, 144)); // Verde claro
+        botonesTablero[fila][columna].setBackground(new Color(144, 238, 144));
         
-        // Obtener tamaño del barco actual
         int tamBarcoActual = barcosPendientes[barcoActual];
         
-        // Si ya hay 2 casillas, verificar que estén alineadas
         if (seleccionActual.size() == 2) {
             if (!estanAlineadas(seleccionActual.get(0), seleccionActual.get(1))) {
                 mostrarError("Las casillas deben estar alineadas horizontal o verticalmente");
@@ -237,7 +221,6 @@ public class ManejadorTablero {
             }
         }
         
-        // Si hay más de 2 casillas, verificar que sigan la misma línea
         if (seleccionActual.size() > 2) {
             if (!sigueLineaRecta(seleccionActual)) {
                 mostrarError("Las casillas deben estar en línea recta");
@@ -245,15 +228,12 @@ public class ManejadorTablero {
             }
         }
         
-        // Si ya seleccionamos el número correcto de casillas para este barco
         if (seleccionActual.size() == tamBarcoActual) {
-            // Verificar que no haya barcos adyacentes
             if (!espacioValido(seleccionActual)) {
                 mostrarError("No se puede colocar barco adyacente a otro barco");
                 return;
             }
             
-            // Determinar tipo y orientación del barco según su tamaño
             String tipoBarco;
             switch (tamBarcoActual) {
                 case 4: tipoBarco = "PORTAVIONES"; break;
@@ -263,10 +243,8 @@ public class ManejadorTablero {
                 default: tipoBarco = "DESCONOCIDO"; break;
             }
             
-            // Determinar orientación (por defecto horizontal)
             String orientacion = "HORIZONTAL";
             if (seleccionActual.size() > 1) {
-                // Si la fila es la misma en todas las casillas, es horizontal
                 int primeraFila = seleccionActual.get(0).x;
                 boolean esHorizontal = true;
                 
@@ -280,7 +258,6 @@ public class ManejadorTablero {
                 orientacion = esHorizontal ? "HORIZONTAL" : "VERTICAL";
             }
             
-            // Marcar barco en el tablero
             Color colorBarco = obtenerColorBarco(tipoBarco);
             for (Point p : seleccionActual) {
                 botonesTablero[p.x][p.y].setBackground(colorBarco);
@@ -291,10 +268,8 @@ public class ManejadorTablero {
                 botonesTablero[p.x][p.y].setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
             }
             
-            // Agregar a casillas ocupadas
             casillasOcupadas.addAll(seleccionActual);
             
-            // Crear objeto de colocación
             Point primeraCasilla = seleccionActual.get(0);
             ColocacionBarco colocacion = new ColocacionBarco(
                 tipoBarco,
@@ -303,18 +278,14 @@ public class ManejadorTablero {
                 orientacion
             );
             
-            // Notificar colocación
             if (barcoColocadoListener != null) {
                 barcoColocadoListener.accept(colocacion);
             }
             
-            // Limpiar selección actual
             seleccionActual.clear();
             
-            // Avanzar al siguiente barco
             barcoActual++;
             
-            // Actualizar estado
             if (barcoActual < barcosPendientes.length) {
                 if (labelEstado != null) {
                     labelEstado.setText("Coloque barco de " + barcosPendientes[barcoActual] + " casillas");
@@ -327,16 +298,13 @@ public class ManejadorTablero {
         }
     }
     
-    // AGREGAR métodos auxiliares:
     private boolean estanAlineadas(Point p1, Point p2) {
-        // Las casillas están alineadas si comparten fila o columna
         return p1.x == p2.x || p1.y == p2.y;
     }
 
     private boolean sigueLineaRecta(List<Point> puntos) {
         if (puntos.size() <= 2) return true;
         
-        // Verificar si todas comparten fila (horizontal)
         boolean mismaFila = true;
         int fila = puntos.get(0).x;
         for (int i = 1; i < puntos.size(); i++) {
@@ -346,7 +314,6 @@ public class ManejadorTablero {
             }
         }
         
-        // Verificar si todas comparten columna (vertical)
         boolean mismaColumna = true;
         int columna = puntos.get(0).y;
         for (int i = 1; i < puntos.size(); i++) {
@@ -356,24 +323,19 @@ public class ManejadorTablero {
             }
         }
         
-        // Verificar que están contiguas
         if (mismaFila) {
-            // Ordenar por columna
             List<Point> ordenadas = new ArrayList<>(puntos);
             ordenadas.sort(Comparator.comparing(p -> p.y));
             
-            // Verificar que son consecutivas
             for (int i = 1; i < ordenadas.size(); i++) {
                 if (ordenadas.get(i).y != ordenadas.get(i-1).y + 1) {
                     return false;
                 }
             }
         } else if (mismaColumna) {
-            // Ordenar por fila
             List<Point> ordenadas = new ArrayList<>(puntos);
             ordenadas.sort(Comparator.comparing(p -> p.x));
             
-            // Verificar que son consecutivas
             for (int i = 1; i < ordenadas.size(); i++) {
                 if (ordenadas.get(i).x != ordenadas.get(i-1).x + 1) {
                     return false;
@@ -387,7 +349,6 @@ public class ManejadorTablero {
     }
 
     private boolean espacioValido(List<Point> puntos) {
-        // Verificar que ninguna casilla adyacente esté ocupada
         for (Point p : puntos) {
             for (int i = p.x - 1; i <= p.x + 1; i++) {
                 for (int j = p.y - 1; j <= p.y + 1; j++) {
@@ -406,7 +367,6 @@ public class ManejadorTablero {
     private void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(null, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
         
-        // Limpiar selección actual
         for (Point p : seleccionActual) {
             botonesTablero[p.x][p.y].setBackground(Color.BLUE);
             botonesTablero[p.x][p.y].setText("");
@@ -416,20 +376,18 @@ public class ManejadorTablero {
 
     private Color obtenerColorBarco(String tipoBarco) {
         switch (tipoBarco.toUpperCase()) {
-            case "PORTAVIONES": return new Color(255, 0, 0);  // Rojo
-            case "SUBMARINO": return new Color(0, 255, 255);    // Cyan
-            case "DESTRUCTOR": return new Color(0, 128, 0);   // Verde
-            case "FRAGATA": return new Color(255, 165, 0);    // Naranja
+            case "PORTAVIONES": return new Color(255, 0, 0); 
+            case "SUBMARINO": return new Color(0, 255, 255);   
+            case "DESTRUCTOR": return new Color(0, 128, 0); 
+            case "FRAGATA": return new Color(255, 165, 0); 
             default: return Color.GRAY;
         }
     }
 
-    // Panel visual del tablero propio
     public JPanel getTableroPanelPropio() {
-        return tableroPanel; // El panel que ya usas para tu tablero
+        return tableroPanel;
     }
 
-    // Panel visual del tablero rival (debes crear uno si no existe)
     private JPanel tableroPanelRival;
 
     public JPanel getTableroPanelRival() {
@@ -439,7 +397,6 @@ public class ManejadorTablero {
         return tableroPanelRival;
     }
 
-    // Ejemplo de creación de tablero rival (solo muestra agua, tocado, hundido, desconocido)
     private JPanel crearTableroRival() {
         JPanel panel = new JPanel(new GridLayout(tamaño, tamaño, 2, 2));
         panel.setBorder(BorderFactory.createTitledBorder("Tablero Rival"));
@@ -452,20 +409,14 @@ public class ManejadorTablero {
                 btn.setPreferredSize(CASILLA_SIZE);
                 btn.setFont(FONT_CASILLA);
                 btn.setBackground(COLOR_CASILLA_VACIA);
-                btn.setEnabled(true); // Para permitir ataques
-                // Aquí puedes añadir lógica para mostrar el estado real recibido del servidor
+                btn.setEnabled(true);
                 panel.add(btn);
             }
         }
         return panel;
     }
 
-    /**
-     * Habilita la selección de casillas en el tablero rival para atacar.
-     * El callback recibirá (fila, columna) de la casilla atacada.
-     */
     public void habilitarAtaqueRival(BiConsumer<Integer, Integer> callback) {
-        System.out.println("[DEBUG] habilitarAtaqueRival: habilitando botones para atacar");
         if (tableroPanelRival == null) {
             tableroPanelRival = crearTableroRival();
         }
@@ -498,7 +449,6 @@ public class ManejadorTablero {
         }
     }
 
-    // Marca agua en el tablero rival
     public void marcarAguaEnRival(int fila, int columna) {
         if (tableroPanelRival == null) return;
         int idx = fila * tamaño + columna;
@@ -511,7 +461,6 @@ public class ManejadorTablero {
         }
     }
 
-    // Marca tocado en el tablero rival
     public void marcarTocadoEnRival(int fila, int columna) {
         if (tableroPanelRival == null) return;
         int idx = fila * tamaño + columna;
@@ -524,7 +473,6 @@ public class ManejadorTablero {
         }
     }
 
-    // Marca hundido en el tablero rival
     public void marcarHundidoEnRival(int fila, int columna) {
         if (tableroPanelRival == null) return;
         int idx = fila * tamaño + columna;
@@ -538,7 +486,6 @@ public class ManejadorTablero {
         }
     }
 
-    // Marca agua en el tablero propio
     public void marcarAguaEnPropio(int fila, int columna) {
         if (botonesTablero == null) return;
         JButton btn = botonesTablero[fila][columna];
@@ -546,7 +493,6 @@ public class ManejadorTablero {
         btn.setText("~");
     }
 
-    // Marca tocado en el tablero propio
     public void marcarTocadoEnPropio(int fila, int columna) {
         if (botonesTablero == null) return;
         JButton btn = botonesTablero[fila][columna];
@@ -554,7 +500,6 @@ public class ManejadorTablero {
         btn.setText("X");
     }
 
-    // Marca hundido en el tablero propio
     public void marcarHundidoEnPropio(int fila, int columna) {
         if (botonesTablero == null) return;
         JButton btn = botonesTablero[fila][columna];
@@ -563,9 +508,7 @@ public class ManejadorTablero {
         btn.setText("☠");
     }
 
-    // Deshabilita la selección de ataque en el tablero rival
     public void deshabilitarAtaqueRival() {
-        System.out.println("[DEBUG] deshabilitarAtaqueRival: deshabilitando botones para atacar");
         if (tableroPanelRival == null) return;
         Component[] componentes = tableroPanelRival.getComponents();
         for (Component c : componentes) {

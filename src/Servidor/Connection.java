@@ -20,15 +20,12 @@ class Connection extends Thread {
     public Connection(Socket aClienteSocket) {
         try {
             clienteSocket = aClienteSocket;
-            // IMPORTANTE: Configurar timeout para evitar bloqueos
-            clienteSocket.setSoTimeout(30000); // 30 segundos timeout
+            clienteSocket.setSoTimeout(30000);
             
             entrada = new DataInputStream(clienteSocket.getInputStream());
             salida = new DataOutputStream(clienteSocket.getOutputStream());
             usuarioActual = null;
             partidaActual = null;
-            
-            System.out.println("Nueva conexión desde: " + aClienteSocket.getRemoteSocketAddress());
             
         } catch(IOException e) {
             System.out.println("Connection: " + e.getMessage());
@@ -39,26 +36,19 @@ class Connection extends Thread {
     public void run() {
         try {
             boolean fin = false;
-            
-            // Autenticar UNA SOLA VEZ al inicio
             if (!autenticarUsuario()) {
                 System.out.println("Autenticación fallida, cerrando conexión");
                 return;
             }
             
-            System.out.println("Usuario " + usuarioActual.getName() + " autenticado correctamente");
-            
-            // IMPORTANTE: Enviar confirmación de que está listo
             salida.writeUTF("ready_for_commands");
-            salida.flush(); // IMPORTANTE
+            salida.flush();
             
-            // Registrar conexión
             Servidor.registrarConexion(usuarioActual.getName(), this);
             
             while(!fin && usuarioActual != null) {
                 try {
                     String pedido = entrada.readUTF();
-                    System.out.println("[COMANDO] Usuario " + usuarioActual.getName() + " envió: " + pedido);
                     
                     switch (pedido) {
                         case "crear_partida":
@@ -88,7 +78,7 @@ class Connection extends Thread {
                             
                         case "estado_servidor":
                             salida.writeUTF(Servidor.obtenerEstadoServidor());
-                            salida.flush(); // IMPORTANTE
+                            salida.flush();
                             break;
                             
                         case "termina_servicio":
@@ -110,13 +100,10 @@ class Connection extends Thread {
                             break;
                             
                         case "quien_empieza":
-                            System.out.println("[DEBUG] quien_empieza recibido de " + usuarioActual.getName());
                             if (Servidor.esTurnoDeUsuario(partidaActual, usuarioActual)) {
                                 salida.writeUTF("tu_turno");
-                                System.out.println("[DEBUG] Respondiendo tu_turno a " + usuarioActual.getName());
                             } else {
                                 salida.writeUTF("turno_rival");
-                                System.out.println("[DEBUG] Respondiendo turno_rival a " + usuarioActual.getName());
                             }
                             salida.flush();
                             break;
@@ -124,15 +111,13 @@ class Connection extends Thread {
                         default:
                             System.err.println("[ERROR] Comando no reconocido: " + pedido);
                             salida.writeUTF("error:Comando no reconocido: " + pedido);
-                            salida.flush(); // IMPORTANTE
+                            salida.flush();
                             break;
                     }
                     
-                    // IMPORTANTE: Pequeña pausa para evitar saturación
                     Thread.sleep(10);
                     
                 } catch (java.net.SocketTimeoutException e) {
-                    // Timeout normal - continuar
                     continue;
                 } catch (IOException e) {
                     System.out.println("Error leyendo comando: " + e.getMessage());
@@ -163,8 +148,6 @@ class Connection extends Thread {
             String tipoAuth = entrada.readUTF();
             String nombre = entrada.readUTF();
             String contraseña = entrada.readUTF();
-            
-            System.out.println("Autenticando: " + tipoAuth + " para " + nombre);
             
             if ("registro".equals(tipoAuth)) {
                 return procesarRegistro(nombre, contraseña);
@@ -230,8 +213,6 @@ class Connection extends Thread {
         salida.writeUTF("partida_creada:" + idPartida);
         salida.flush();
         
-        System.out.println("Partida creada: " + idPartida + " por " + usuarioActual.getName());
-        
         salida.writeUTF("esperando_rival:Esperando que se una otro jugador...");
         salida.flush();
         
@@ -247,26 +228,20 @@ class Connection extends Thread {
             String partidasStr = String.join("|", partidas);
             salida.writeUTF("partidas_disponibles:" + partidasStr);
         }
-        salida.flush(); // IMPORTANTE
+        salida.flush();
     }
     
     private void unirseAPartidaSeleccionada(String idPartida) throws IOException {
-        System.out.println("Usuario " + usuarioActual.getName() + " intenta unirse a partida: " + idPartida);
         
         if (Servidor.unirseAPartida(idPartida, usuarioActual)) {
             partidaActual = idPartida;
             salida.writeUTF("unido_exitoso:Te has unido a la partida " + idPartida);
             salida.flush();
             
-            System.out.println("Usuario " + usuarioActual.getName() + " unido exitosamente a partida " + idPartida);
-            
-            // Verificar si la partida está completa
             Partida partida = Servidor.obtenerPartida(idPartida);
             if (partida != null && partida.getUsuarioRival() != null) {
-                // Partida completa - iniciar fase de colocación
                 notificarPartidaCompleta(partida);
             } else {
-                // Esperando rival
                 salida.writeUTF("esperando_rival:Esperando que se una otro jugador...");
                 salida.flush();
                 esperarRival(idPartida);
@@ -283,28 +258,25 @@ class Connection extends Thread {
                                 ? partida.getUsuarioRival().getName()
                                 : partida.getUsuarioPrincipal().getName();
             
-            System.out.println("Notificando partida completa a " + usuarioActual.getName() + " - rival: " + nombreRival);
             
             salida.writeUTF("rival_encontrado:" + nombreRival);
             salida.flush();
             
-            Thread.sleep(500); // Pausa para procesar mensaje
+            Thread.sleep(500);
             
             salida.writeUTF("partida_lista:Ambos jugadores conectados");
             salida.flush();
             
-            Thread.sleep(500); // Pausa para procesar mensaje
+            Thread.sleep(500);
             
             salida.writeUTF("turno_colocacion:Puede empezar a colocar barcos");
             salida.flush();
-            
-            System.out.println("Notificación enviada correctamente a " + usuarioActual.getName());
             
         } catch (IOException e) {
             System.err.println("Error notificando partida completa: " + e.getMessage());
         } catch (InterruptedException e) {
             System.err.println("Error en pausa de notificación: " + e.getMessage());
-            Thread.currentThread().interrupt(); // Restaurar estado de interrupción
+            Thread.currentThread().interrupt();
         }
     }
     
@@ -312,7 +284,7 @@ class Connection extends Thread {
         new Thread(() -> {
             try {
                 int intentos = 0;
-                final int MAX_INTENTOS = 150; // 5 minutos
+                final int MAX_INTENTOS = 150;
                 
                 while (intentos < MAX_INTENTOS) {
                     Thread.sleep(2000);
@@ -371,19 +343,16 @@ class Connection extends Thread {
         }
         
         try {
-            // Confirmar que puede colocar barcos
             salida.writeUTF("colocacion_activa:Puede colocar barcos");
             salida.flush();
             
             Thread.sleep(200);
             
-            // Enviar instrucciones
             enviarInstruccionesColocacion();
             
         } catch (InterruptedException e) {
             System.err.println("Error en pausa de inicialización: " + e.getMessage());
             Thread.currentThread().interrupt();
-            // Continuar sin la pausa
             enviarInstruccionesColocacion();
         }
     }
@@ -409,7 +378,6 @@ class Connection extends Thread {
         int fila = Integer.parseInt(filaStr);
         int columna = Integer.parseInt(columnaStr);
 
-        // --- COMPROBAR LÍMITE ANTES DE COLOCAR ---
         if (!Servidor.puedeColocarBarco(partidaActual, usuarioActual, tipoBarco)) {
             salida.writeUTF("error_colocacion:Límite alcanzado para " + tipoBarco);
             salida.flush();
@@ -422,12 +390,10 @@ class Connection extends Thread {
             salida.writeUTF("barco_colocado:Barco " + tipoBarco + " colocado correctamente en (" + fila + "," + columna + ")");
             salida.flush();
 
-            // SIEMPRE enviar barcos_restantes después de cada colocación
             String restantes = Servidor.obtenerBarcosRestantes(partidaActual, usuarioActual);
             salida.writeUTF("barcos_restantes:" + restantes);
             salida.flush();
 
-            // (Opcional) Si quieres, puedes dejar verificarBarcosRestantes solo para la lógica de finalización
         } else {
             salida.writeUTF("error_colocacion:No se pudo colocar el barco en esa posición - Posición ocupada o inválida");
             salida.flush();
@@ -435,24 +401,18 @@ class Connection extends Thread {
     }
     
     private boolean esEntradaValida(String tipoBarco, int fila, int columna, String orientacion) {
-        // Validar tipo de barco
         if (tipoBarco == null || 
             (!tipoBarco.equals("PORTAVIONES") && !tipoBarco.equals("SUBMARINO") && 
              !tipoBarco.equals("DESTRUCTOR") && !tipoBarco.equals("FRAGATA"))) {
-            System.err.println("Tipo de barco inválido: " + tipoBarco);
             return false;
         }
         
-        // Validar coordenadas
         if (fila < 0 || fila >= 8 || columna < 0 || columna >= 8) {
-            System.err.println("Coordenadas fuera de rango: (" + fila + "," + columna + ")");
             return false;
         }
         
-        // Validar orientación
         if (orientacion == null || 
             (!orientacion.equals("HORIZONTAL") && !orientacion.equals("VERTICAL"))) {
-            System.err.println("Orientación inválida: " + orientacion);
             return false;
         }
         
@@ -461,7 +421,6 @@ class Connection extends Thread {
     
     private void verificarBarcosRestantes() throws IOException {
         try {
-            // Verificar si los métodos existen en Servidor
             boolean completado = false;
             String restantes = "";
             
@@ -469,30 +428,28 @@ class Connection extends Thread {
                 completado = Servidor.usuarioCompletoColocacion(partidaActual, usuarioActual);
             } catch (Exception e) {
                 System.err.println("Método usuarioCompletoColocacion no implementado: " + e.getMessage());
-                // Fallback: asumir no completado por ahora
                 completado = false;
             }
             
             if (completado) {
                 salida.writeUTF("colocacion_completa:Has colocado todos tus barcos");
-                salida.flush(); // ASEGURARSE DE HACER FLUSH INMEDIATAMENTE
+                salida.flush(); 
             } else {
                 try {
                     restantes = Servidor.obtenerBarcosRestantes(partidaActual, usuarioActual);
                     salida.writeUTF("barcos_restantes:" + restantes);
-                    salida.flush(); // ASEGURARSE DE HACER FLUSH INMEDIATAMENTE
+                    salida.flush(); 
                 } catch (Exception e) {
                     System.err.println("Método obtenerBarcosRestantes no implementado: " + e.getMessage());
-                    // Fallback: mensaje genérico
                     salida.writeUTF("barcos_restantes:Continúe colocando barcos");
-                    salida.flush(); // ASEGURARSE DE HACER FLUSH INMEDIATAMENTE
+                    salida.flush();
                 }
             }
             
         } catch (Exception e) {
             System.err.println("Error verificando barcos restantes: " + e.getMessage());
             salida.writeUTF("barcos_restantes:Error verificando estado - Continúe colocando");
-            salida.flush(); // ASEGURARSE DE HACER FLUSH INMEDIATAMENTE
+            salida.flush();
         }
     }
     
@@ -505,8 +462,7 @@ class Connection extends Thread {
         
         Partida partida = Servidor.obtenerPartida(partidaActual);
         if (partida != null) {
-        partida.inicializarTurno(); // El usuario principal empieza
-        System.out.println("[DEBUG] Turno inicializado: " + partida.getTurnoActual().getName());
+        partida.inicializarTurno(); 
         }
         
         if (partida == null) {
@@ -523,7 +479,6 @@ class Connection extends Thread {
                 finalizado = Servidor.finalizarColocacionUsuario(partidaActual, usuarioActual);
             } catch (Exception e) {
                 System.err.println("Método finalizarColocacionUsuario no implementado: " + e.getMessage());
-                // Fallback: asumir finalizado por ahora
                 finalizado = true;
             }
             
@@ -532,7 +487,6 @@ class Connection extends Thread {
                     ambosListos = Servidor.ambosJugadoresListos(partidaActual);
                 } catch (Exception e) {
                     System.err.println("Método ambosJugadoresListos no implementado: " + e.getMessage());
-                    // Fallback: asumir no están listos
                     ambosListos = false;
                 }
                 
@@ -561,61 +515,45 @@ class Connection extends Thread {
     }
     
     private void procesarFinalizarColocacion() throws IOException {
-        System.out.println("[DEBUG] procesarFinalizarColocacion llamado por: " + usuarioActual.getName());
         boolean completo = Servidor.finalizarColocacionUsuario(partidaActual, usuarioActual);
 
-        System.out.println("[DEBUG] ¿Usuario ha colocado todos los barcos? " + completo);
-
         if (!completo) {
-            System.out.println("[DEBUG] Usuario NO ha colocado todos los barcos: " + usuarioActual.getName());
             salida.writeUTF("error_colocacion:No has colocado todos los barcos");
             salida.flush();
             return;
         }
 
         boolean ambosListos = Servidor.ambosJugadoresListos(partidaActual);
-        System.out.println("[DEBUG] ¿Ambos jugadores listos? " + ambosListos);
-
+        
         if (ambosListos) {
-            System.out.println("[DEBUG] Ambos listos, guardando partida y notificando a ambos jugadores.");
             Servidor.guardarPartida(partidaActual);
 
-            // INICIALIZAR TURNO AQUÍ
             Partida partida = Servidor.obtenerPartida(partidaActual);
             if (partida != null) {
-                partida.inicializarTurno(); // El usuario principal empieza
-                System.out.println("[DEBUG] Turno inicializado: " + partida.getTurnoActual().getName());
+                partida.inicializarTurno();
             }
 
             Connection conn1 = this;
             Connection conn2 = Servidor.getConexionRival(partidaActual, usuarioActual);
 
             if (conn1 != null) {
-                System.out.println("[DEBUG] Enviando partida_ready a " + usuarioActual.getName());
                 conn1.enviarPartidaReady();
             }
             if (conn2 != null) {
-                System.out.println("[DEBUG] Enviando partida_ready a rival: " + (conn2.getUsuarioActual() != null ? conn2.getUsuarioActual().getName() : "null"));
                 conn2.enviarPartidaReady();
-            } else {
-                System.out.println("[DEBUG] No se encontró conexión del rival para notificar partida_ready.");
             }
         } else {
-            System.out.println("[DEBUG] Solo este usuario ha terminado, esperando rival...");
             salida.writeUTF("colocacion_finalizada:Esperando que el rival termine de colocar...");
             salida.flush();
         }
     }
 
-    // Método auxiliar para notificar al cliente
     public void enviarPartidaReady() throws IOException {
         salida.writeUTF("partida_ready:Ambos jugadores listos - ¡Comienza la batalla!");
         salida.flush();
     }
     
     private void limpiarRecursos() {
-        System.out.println("Limpiando recursos para usuario: " + 
-                          (usuarioActual != null ? usuarioActual.getName() : "desconocido"));
         
         if (usuarioActual != null) {
             try {
@@ -649,17 +587,13 @@ class Connection extends Thread {
             System.err.println("Error cerrando socket: " + e.getMessage());
         }
         
-        // Eliminar conexión registrada
         try {
             Servidor.eliminarConexion(usuarioActual.getName());
         } catch (Exception e) {
             System.err.println("Error eliminando conexión: " + e.getMessage());
         }
-        
-        System.out.println("Recursos limpiados para conexión");
     }
     
-    // AGREGAR getters necesarios (si no existen):
     public Usuario getUsuarioActual() {
         return usuarioActual;
     }
@@ -673,33 +607,27 @@ class Connection extends Thread {
     }
 
     private void procesarAtaque() throws IOException {
-        // Leer coordenadas
         String coords = entrada.readUTF();
         String[] partes = coords.split(",");
         int fila = Integer.parseInt(partes[0]);
         int columna = Integer.parseInt(partes[1]);
 
-        // Verificar turno
         if (!Servidor.esTurnoDeUsuario(partidaActual, usuarioActual)) {
             salida.writeUTF("error:No es tu turno");
             salida.flush();
             return;
         }
 
-        // Realizar ataque
         String resultado = Servidor.procesarAtaque(partidaActual, usuarioActual, fila, columna);
 
-        // Enviar resultado al atacante
         salida.writeUTF("resultado_ataque:" + resultado);
         salida.flush();
 
-        // Notificar al rival (para actualizar su tablero)
         Connection rivalConn = Servidor.getConexionRival(partidaActual, usuarioActual);
         if (rivalConn != null) {
             rivalConn.notificarAtaqueRecibido(fila, columna, resultado);
         }
 
-        // --- FINALIZAR PARTIDA SI TODOS LOS BARCOS DEL RIVAL HAN SIDO HUNDIDOS ---
         Partida partida = Servidor.obtenerPartida(partidaActual);
         if (partida != null) {
             Usuario rival = usuarioActual.equals(partida.getUsuarioPrincipal())
@@ -707,7 +635,6 @@ class Connection extends Thread {
                 : partida.getUsuarioPrincipal();
             Tablero tableroRival = partida.getTableroJugador(rival);
             if (tableroRival != null && tableroRival.todosBarcosHundidos()) {
-                // Notificar a ambos jugadores
                 salida.writeUTF("fin_partida:¡Has ganado! Todos los barcos rivales han sido hundidos.");
                 salida.flush();
                 if (rivalConn != null) {
@@ -719,13 +646,11 @@ class Connection extends Thread {
             }
         }
 
-        // Cambiar turno si la partida no ha terminado
         Servidor.cambiarTurno(partidaActual);
     }
 
     public void notificarAtaqueRecibido(int fila, int columna, String resultado) {
         try {
-            // Envía un mensaje al cliente rival con la información del ataque recibido
             salida.writeUTF("ataque_recibido:" + fila + "," + columna + "," + resultado);
             salida.flush();
         } catch (IOException e) {

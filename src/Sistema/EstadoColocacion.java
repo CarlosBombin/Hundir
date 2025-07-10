@@ -6,20 +6,17 @@ import Cliente.Usuario;
 
 public class EstadoColocacion {
     
-    // Estado actual usando el patrón State
     private EstadoPartida estadoActual;
     
-    // Contadores por jugador
     private ContadorBarcosJugador contadorPrincipal;
     private ContadorBarcosJugador contadorRival;
     
     public EstadoColocacion() {
-        this.estadoActual = ColocacionPrincipal.getInstancia(); // Siempre empieza el principal
+        this.estadoActual = ColocacionPrincipal.getInstancia();
         this.contadorPrincipal = new ContadorBarcosJugador();
         this.contadorRival = new ContadorBarcosJugador();
     }
     
-    // Métodos usando el patrón State
     public boolean puedeColocarBarco(Usuario usuario, boolean esPrincipal) {
         return estadoActual.puedeColocarBarco(usuario, esPrincipal);
     }
@@ -36,7 +33,6 @@ public class EstadoColocacion {
         return estadoActual.partidaCompleta();
     }
     
-    // Getters para contadores
     public ContadorBarcosJugador getContadorPrincipal() {
         return contadorPrincipal;
     }
@@ -53,7 +49,6 @@ public class EstadoColocacion {
         }
     }
     
-    // Método para debug
     public String getEstadoActual() {
         return estadoActual.getClass().getSimpleName();
     }

@@ -63,5 +63,20 @@
     "name": "Osos",
     "password": "Osos",
     "esNuevo": false
+  },
+  {
+    "name": "Luis",
+    "password": "Luis",
+    "esNuevo": false
+  },
+  {
+    "name": "Pedro",
+    "password": "Pedro",
+    "esNuevo": false
+  },
+  {
+    "name": "Login",
+    "password": "Login",
+    "esNuevo": false
   }
 ]

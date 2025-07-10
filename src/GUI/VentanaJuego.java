@@ -11,14 +11,12 @@ import java.util.Map;
 
 public class VentanaJuego extends JFrame {
     
-    // Dependencias inyectadas siguiendo DIP
     private final ComunicacionServidor comunicacion;
     private final ComponentesUI componentes;
     private final ManejadorTablero tablero;
     private final ValidadorColocacionLocal validador;
-    private GameLogger logger; // QUITAR final aquí
+    private GameLogger logger;
     
-    // Estado del juego
     private boolean colocandoBarcos;
     private Timer colocacionTimer;
     
@@ -39,14 +37,12 @@ public class VentanaJuego extends JFrame {
             configurarVentana();
             inicializarComponentes();
             
-            // Crear logger INMEDIATAMENTE después de inicializar componentes
             this.logger = new GameLogger(componentes.getAreaLog());
             
             configurarLayout();
             configurarEventos();
             iniciarComunicacion();
             
-            // Log inicial
             logger.log("Cliente iniciado correctamente");
             
             setVisible(true);
@@ -77,23 +73,19 @@ public class VentanaJuego extends JFrame {
         componentes.inicializar();
         tablero.crearTableroVisual(this::seleccionarCasilla);
         
-        // NUEVO: Añadir esta línea para conectar el tablero con la etiqueta de estado
         tablero.setDependencias(componentes.getLabelEstado(), this::enviarColocacionBarco);
     }
     
     private void configurarLayout() {
         panelPrincipal = new JPanel(new BorderLayout());
         
-        // Norte: Estado
         panelPrincipal.add(componentes.getLabelEstado(), BorderLayout.NORTH);
         
-        // Centro: Tablero y colocación
         JPanel panelCentral = new JPanel(new BorderLayout());
         panelCentral.add(tablero.getTableroPanel(), BorderLayout.CENTER);
         panelCentral.add(componentes.getPanelColocacion(), BorderLayout.EAST);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
         
-        // Sur: Botones y log
         JPanel panelInferior = new JPanel(new BorderLayout());
         panelInferior.add(componentes.getPanelBotones(), BorderLayout.NORTH);
         panelInferior.add(componentes.getScrollLog(), BorderLayout.CENTER);
@@ -122,11 +114,9 @@ public class VentanaJuego extends JFrame {
         );
     }
     
-    // Métodos de acción simplificados usando las clases de soporte
-    // REEMPLAZAR los métodos de acción con debugging:
     private void crearPartida() {
         logger.log("Iniciando creación de partida...");
-        componentes.deshabilitarBotonesMenu(); // Deshabilitar inmediatamente
+        componentes.deshabilitarBotonesMenu(); 
         
         comunicacion.enviarComando("crear_partida", respuesta -> {
             logger.log("Respuesta crear partida: " + respuesta);
@@ -134,15 +124,14 @@ public class VentanaJuego extends JFrame {
             if (respuesta.startsWith("partida_creada:")) {
                 logger.logSuccess("Partida creada: " + respuesta.substring(15));
                 componentes.actualizarEstado("Esperando rival...");
-                // Botones ya deshabilitados
             } else if (respuesta.startsWith("ERROR:")) {
                 logger.logError("Error creando partida: " + respuesta.substring(6));
                 componentes.mostrarError("Error creando partida: " + respuesta.substring(6));
-                componentes.habilitarBotonesMenu(); // Re-habilitar en caso de error
+                componentes.habilitarBotonesMenu(); 
             } else {
                 logger.logError("Respuesta inesperada: " + respuesta);
                 componentes.mostrarError("Error inesperado en el servidor");
-                componentes.habilitarBotonesMenu(); // Re-habilitar en caso de error
+                componentes.habilitarBotonesMenu();
             }
         });
     }
@@ -196,7 +185,6 @@ public class VentanaJuego extends JFrame {
         });
     }
     
-    // REEMPLAZAR el método colocarBarco:
     private void colocarBarco() {
         logger.log("=== INICIO COLOCAR BARCO ===");
         
@@ -222,7 +210,6 @@ public class VentanaJuego extends JFrame {
         comunicacion.enviarColocacionBarco(
             colocacion,
             respuesta -> {
-                // Procesar respuesta barco_colocado
                 logger.log("=== PROCESANDO RESPUESTA COLOCACIÓN ===");
                 logger.log("Respuesta: " + respuesta);
                 
@@ -230,12 +217,10 @@ public class VentanaJuego extends JFrame {
                     String mensaje = respuesta.substring(15);
                     logger.logSuccess("Barco colocado exitosamente: " + mensaje);
                     
-                    // CRÍTICO: Actualizar tablero visual
                     tablero.marcarBarco(colocacion);
                     componentes.limpiarSeleccion();
                     componentes.actualizarEstado("Barco colocado: " + mensaje);
                     
-                    // NO leer mensaje adicional - ya se maneja en procesarMensajeBarcoColocado
                 } else {
                     logger.logWarning("Respuesta no esperada: " + respuesta);
                     componentes.habilitarBotonColocar();
@@ -281,21 +266,16 @@ public class VentanaJuego extends JFrame {
         }
     }
     
-    // REEMPLAZAR el método procesarRespuestaColocacion:
     private void procesarRespuestaColocacion(String respuesta, ColocacionBarco colocacion) {
         if (respuesta.startsWith("barco_colocado:")) {
             String mensaje = respuesta.substring(15);
             logger.logSuccess("Barco colocado exitosamente: " + mensaje);
             
-            // ACTUALIZAR INMEDIATAMENTE TABLERO
             SwingUtilities.invokeLater(() -> {
                 tablero.marcarBarco(colocacion);
                 componentes.actualizarEstado("Barco colocado: " + mensaje);
                 componentes.limpiarSeleccion();
             });
-            
-            // Los mensajes adicionales (barcos_restantes/colocacion_completa) se procesarán 
-            // automáticamente en procesarMensajeServidor o como mensaje adicional
             
         } else if (respuesta.startsWith("error_colocacion:")) {
             String error = respuesta.substring(17);
@@ -349,7 +329,6 @@ public class VentanaJuego extends JFrame {
         logger.log("Mensaje: " + mensaje);
 
         if (mensaje.startsWith("partida_ready:")) {
-            logger.logSuccess("[DEBUG] Recibido partida_ready, iniciando juego");
             iniciarJuego();
             return;
         }
@@ -411,18 +390,15 @@ public class VentanaJuego extends JFrame {
             return;
         }
         
-        logger.log("=== FIN PROCESAMIENTO MENSAJE ===");
     }
     
     private void iniciarFaseColocacion() {
-        logger.log("=== INICIANDO FASE DE COLOCACIÓN ===");
         colocandoBarcos = true;
         componentes.actualizarEstado("Coloque sus barcos en el tablero");
         
-        // AÑADIR ESTAS LÍNEAS:
         componentes.mostrarPanelColocacion();
         componentes.habilitarBotonColocar();
-        tablero.habilitarSeleccion(); // Si este método existe
+        tablero.habilitarSeleccion();
     }
     
     private void finalizarFaseColocacion() {
@@ -433,19 +409,15 @@ public class VentanaJuego extends JFrame {
     }
     
     private void iniciarJuego() {
-        logger.logSuccess("Partida lista para jugar");
         finalizarFaseColocacion();
         componentes.ocultarLabelEsperaRival(panelPrincipal);
         componentes.ocultarBotonComprobarRival(panelPrincipal);
         componentes.actualizarEstado("¡Comienza la batalla!");
         mostrarTablerosDeBatalla();
         comunicacion.enviarComando("quien_empieza", respuesta -> {
-            logger.log("[DEBUG] Respuesta quien_empieza: " + respuesta);
             if (respuesta.startsWith("tu_turno")) {
-                logger.log("[DEBUG] Habilitando tablero rival para atacar (es mi turno)");
                 tablero.habilitarAtaqueRival((fila, columna) -> enviarAtaque(fila, columna));
             } else {
-                logger.log("[DEBUG] Deshabilitando tablero rival (no es mi turno)");
                 tablero.deshabilitarAtaqueRival();
             }
         });
@@ -453,7 +425,6 @@ public class VentanaJuego extends JFrame {
 
     private void mostrarTablerosDeBatalla() {
         JPanel panelBatalla = new JPanel(new GridLayout(1, 2, 20, 0));
-        panelBatalla.add(tablero.getTableroPanelPropio());
         panelBatalla.add(tablero.getTableroPanelRival());
         setContentPane(panelBatalla);
         revalidate();
@@ -461,21 +432,15 @@ public class VentanaJuego extends JFrame {
         tablero.habilitarAtaqueRival((fila, columna) -> enviarAtaque(fila, columna));
     }
 
-    // Método agregado para manejar el ataque al rival
     private void enviarAtaque(Integer fila, Integer columna) {
-        logger.log("[DEBUG] Intentando atacar en (" + fila + "," + columna + ")");
         comunicacion.enviarComandoConParametro("atacar", fila + "," + columna, respuesta -> {
-            logger.log("[DEBUG] Respuesta ataque: " + respuesta);
             procesarRespuestaAtaque(fila, columna, respuesta);
         });
     }
     
     private void mostrarDialogoPartidas(String partidasStr) {
-        logger.log("=== MOSTRANDO DIALOGO PARTIDAS ===");
-        logger.log("String recibido: '" + partidasStr + "'");
         
         if (partidasStr == null || partidasStr.trim().isEmpty()) {
-            logger.logWarning("String de partidas vacío o null");
             componentes.mostrarInformacion("No hay partidas disponibles");
             return;
         }
@@ -483,39 +448,30 @@ public class VentanaJuego extends JFrame {
         SelectorPartidas selector = new SelectorPartidas(this, partidasStr.trim());
         String partidaSeleccionada = selector.mostrarDialogo();
         
-        logger.log("Partida seleccionada por usuario: " + partidaSeleccionada);
-        
         if (partidaSeleccionada != null) {
             unirseAPartidaSeleccionada(partidaSeleccionada);
         } else {
             logger.log("Usuario canceló selección de partida");
         }
-        
-        logger.log("=== FIN DIALOGO PARTIDAS ===");
     }
     
     private void unirseAPartidaSeleccionada(String partidaSeleccionada) {
         String idPartida = partidaSeleccionada.split(" - ")[0];
         
-        logger.log("Intentando unirse a partida: " + idPartida);
         componentes.deshabilitarBotonesMenu();
         
         comunicacion.enviarComandoConParametro("seleccionar_partida", idPartida, resultado -> {
-            logger.log("Resultado unirse a partida: " + resultado);
+
             
             if (resultado.startsWith("unido_exitoso:")) {
-                logger.logSuccess("Unido exitosamente: " + resultado.substring(14));
                 componentes.actualizarEstado("Unido a partida: " + idPartida);
             } else if (resultado.startsWith("ERROR:")) {
-                logger.logError("Error uniéndose: " + resultado.substring(6));
                 componentes.mostrarError("Error uniéndose a la partida: " + resultado.substring(6));
                 componentes.habilitarBotonesMenu();
             } else if (resultado.startsWith("error")) {
-                logger.logError("Error del servidor: " + resultado.substring(6));
                 componentes.mostrarError("Error del servidor: " + resultado.substring(6));
                 componentes.habilitarBotonesMenu();
             } else {
-                logger.logError("Respuesta inesperada al unirse: " + resultado);
                 componentes.mostrarError("Respuesta inesperada del servidor");
                 componentes.habilitarBotonesMenu();
             }
@@ -525,12 +481,10 @@ public class VentanaJuego extends JFrame {
     private void seleccionarCasilla(int fila, int columna) {
         if (colocandoBarcos) {
             componentes.seleccionarCasilla(fila, columna);
-            logger.log("Seleccionada casilla: (" + fila + "," + columna + ")");
         }
     }
     
     private void manejarErrorComunicacion(String error) {
-        logger.logError("Error de comunicación: " + error);
         componentes.actualizarEstado("Desconectado");
         componentes.habilitarBotonesMenu();
     }
@@ -540,41 +494,26 @@ public class VentanaJuego extends JFrame {
         System.exit(0);
     }
     
-    // AGREGAR este nuevo método:
     private void enviarColocacionBarco(ColocacionBarco colocacion) {
-        logger.log("=== COLOCACIÓN AUTOMÁTICA ===");
-        logger.log("Barco detectado: " + colocacion.getTipoBarco() + " en (" + 
-                   colocacion.getFila() + "," + colocacion.getColumna() + ") " + 
-                   colocacion.getOrientacion());
         
-        // Enviar al servidor
         comunicacion.enviarColocacionBarco(
             colocacion,
-            respuesta -> {
-                // Procesar respuesta
-                logger.log("=== RESPUESTA COLOCACIÓN AUTOMÁTICA ===");
-                logger.log("Respuesta: " + respuesta);
-                
+            respuesta -> {                
                 if (respuesta.startsWith("barco_colocado:")) {
                     String mensaje = respuesta.substring(15);
-                    logger.logSuccess("Barco colocado exitosamente: " + mensaje);
                     componentes.actualizarEstado("Barco colocado: " + mensaje);
                 } else if (respuesta.startsWith("error_colocacion:")) {
                     String error = respuesta.substring(17);
-                    logger.logError("Error colocando barco: " + error);
                     componentes.mostrarError("Error colocando barco: " + error);
                 } else {
-                    logger.logWarning("Respuesta no esperada: " + respuesta);
                 }
             },
             error -> {
-                logger.logError("Error de comunicación: " + error);
                 componentes.mostrarError("Error de comunicación: " + error);
             }
         );
     }
     
-    // Método para parsear el string
     private Map<String, Integer> parsearBarcosRestantes(String texto) {
         Map<String, Integer> mapa = new HashMap<>();
         String[] partes = texto.split(",");
@@ -591,15 +530,11 @@ public class VentanaJuego extends JFrame {
         componentes.actualizarEstado("Esperando a que el rival termine de colocar...");
         componentes.ocultarPanelColocacion();
         componentes.mostrarLabelEsperaRival(panelPrincipal);
-
-        // Mostrar el botón y asociar la acción
         componentes.mostrarBotonComprobarRival(panelPrincipal, e -> comprobarRivalListo());
     }
 
     private void comprobarRivalListo() {
-        logger.log("Comprobando si el rival ya está listo...");
         comunicacion.enviarComando("comprobar_listo", respuesta -> {
-            logger.log("Respuesta comprobar_listo: " + respuesta);
             if (respuesta.startsWith("partida_ready:")) {
                 iniciarJuego();
             } else if (respuesta.startsWith("aun_esperando:")) {
@@ -629,13 +564,11 @@ public class VentanaJuego extends JFrame {
                 default:
                     componentes.mostrarError("Respuesta inesperada: " + resultado);
             }
-            // Deshabilita tablero hasta el siguiente turno
             tablero.deshabilitarAtaqueRival();
         }
     }
 
     private void procesarAtaqueRecibido(String mensaje) {
-        // mensaje esperado: ataque_recibido:fila,columna,resultado
         String datos = mensaje.substring("ataque_recibido:".length());
         String[] partes = datos.split(",");
         int fila = Integer.parseInt(partes[0]);

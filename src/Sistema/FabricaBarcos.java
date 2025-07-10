@@ -92,11 +92,7 @@ public class FabricaBarcos {
             Coordenadas coord = new Coordenadas((char)('A' + targetColumna), targetFila);
             casillas[i] = tablero.getCasilla(coord);
 
-            // DEBUG
-            System.out.println("[DEBUG] Buscando casilla: fila=" + targetFila + " col=" + targetColumna + " -> coord=" + coord + " => " + (casillas[i] != null ? "OK" : "NULL"));
-
             if (casillas[i] == null) {
-                System.out.println("[DEBUG] Casilla fuera de tablero o no encontrada: " + coord);
                 return null;
             }
         }
@@ -106,8 +102,6 @@ public class FabricaBarcos {
     
     private void asignarBarcoACasillas(Barco barco, Casilla[] casillas) {
         for (Casilla casilla : casillas) {
-            System.out.println("[DEBUG] Asignando barco " + barco.getClass().getSimpleName() +
-                " a casilla fila=" + casilla.getFila() + " col=" + casilla.getColumna());
             casilla.setBarco(barco);
         }
     }
