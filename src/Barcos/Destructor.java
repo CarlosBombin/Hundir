@@ -6,6 +6,7 @@ public class Destructor extends Barco{
 	private int tamaño = 2;
 	
 	public Destructor(Casilla cas1, Casilla cas2) {
+		super();
 		this.posiciones.add(cas1);
 		cas1.setBarco(this);
 		this.posiciones.add(cas2);

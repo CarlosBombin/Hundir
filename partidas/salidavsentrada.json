@@ -1,12 +1,12 @@
 {
   "usuarioPrincipal": {
-    "name": "Juan",
-    "password": "Juan",
+    "name": "salida",
+    "password": "salida",
     "esNuevo": false
   },
   "usuarioRival": {
-    "name": "Pepe",
-    "password": "Pepe",
+    "name": "entrada",
+    "password": "entrada",
     "esNuevo": false
   },
   "tableroPrincipal": {
@@ -15,6 +15,64 @@
         {
           "id": {
             "abcisas": "A",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "B",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "C",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "D",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "E",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "F",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "G",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "H",
+            "ordenadas": 0
+          },
+          "estado": {}
+        }
+      ],
+      [
+        {
+          "id": {
+            "abcisas": "A",
             "ordenadas": 1
           },
           "estado": {}
@@ -413,64 +471,6 @@
           "id": {
             "abcisas": "H",
             "ordenadas": 7
-          },
-          "estado": {}
-        }
-      ],
-      [
-        {
-          "id": {
-            "abcisas": "A",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "B",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "C",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "D",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "E",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "F",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "G",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "H",
-            "ordenadas": 8
           },
           "estado": {}
         }
@@ -484,6 +484,64 @@
         {
           "id": {
             "abcisas": "A",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "B",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "C",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "D",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "E",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "F",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "G",
+            "ordenadas": 0
+          },
+          "estado": {}
+        },
+        {
+          "id": {
+            "abcisas": "H",
+            "ordenadas": 0
+          },
+          "estado": {}
+        }
+      ],
+      [
+        {
+          "id": {
+            "abcisas": "A",
             "ordenadas": 1
           },
           "estado": {}
@@ -882,64 +940,6 @@
           "id": {
             "abcisas": "H",
             "ordenadas": 7
-          },
-          "estado": {}
-        }
-      ],
-      [
-        {
-          "id": {
-            "abcisas": "A",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "B",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "C",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "D",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "E",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "F",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "G",
-            "ordenadas": 8
-          },
-          "estado": {}
-        },
-        {
-          "id": {
-            "abcisas": "H",
-            "ordenadas": 8
           },
           "estado": {}
         }

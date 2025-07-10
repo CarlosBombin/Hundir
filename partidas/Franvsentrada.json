@@ -1,12 +1,12 @@
 {
   "usuarioPrincipal": {
-    "name": "Pepe",
-    "password": "Pepe",
+    "name": "Fran",
+    "password": "Fran",
     "esNuevo": false
   },
   "usuarioRival": {
-    "name": "Juan",
-    "password": "Juan",
+    "name": "entrada",
+    "password": "entrada",
     "esNuevo": false
   },
   "tableroPrincipal": {

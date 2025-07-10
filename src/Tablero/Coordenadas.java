@@ -16,6 +16,11 @@ public class Coordenadas {
 		this.ordenadas = y;
 	}
 
+	public Coordenadas (int x, int y) {
+		this.abcisas = Transformer.numToLetter(x);
+		this.ordenadas = y;
+	}
+
 	public char getAbcisas() {
 		return abcisas;
 	}

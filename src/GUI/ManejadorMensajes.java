@@ -7,5 +7,6 @@ public interface ManejadorMensajes {
     void esperarColocacion();
     void partidaReady();
     void error(String error);
+    void ataqueRecibido(String mensaje);
     void mensajeNoReconocido(String mensaje);
 }

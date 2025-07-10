@@ -87,21 +87,16 @@ public class FabricaBarcos {
         Casilla[] casillas = new Casilla[cantidad];
         
         for (int i = 0; i < cantidad; i++) {
-            int targetFila;
-            int targetColumna;
-            
-            if (esHorizontal) {
-                targetFila = fila;
-                targetColumna = columna + i;
-            } else {
-                targetFila = fila + i;
-                targetColumna = columna;
-            }
-            
-            Coordenadas coord = new Coordenadas((char)('A' + targetColumna), targetFila + 1);
+            int targetFila = esHorizontal ? fila : fila + i;
+            int targetColumna = esHorizontal ? columna + i : columna;
+            Coordenadas coord = new Coordenadas((char)('A' + targetColumna), targetFila);
             casillas[i] = tablero.getCasilla(coord);
-            
+
+            // DEBUG
+            System.out.println("[DEBUG] Buscando casilla: fila=" + targetFila + " col=" + targetColumna + " -> coord=" + coord + " => " + (casillas[i] != null ? "OK" : "NULL"));
+
             if (casillas[i] == null) {
+                System.out.println("[DEBUG] Casilla fuera de tablero o no encontrada: " + coord);
                 return null;
             }
         }
@@ -111,8 +106,9 @@ public class FabricaBarcos {
     
     private void asignarBarcoACasillas(Barco barco, Casilla[] casillas) {
         for (Casilla casilla : casillas) {
-            Coordenadas coord = new Coordenadas((char)('A' + casilla.getColumna()), casilla.getFila() + 1);
-            tablero.setBarco(coord, barco);
+            System.out.println("[DEBUG] Asignando barco " + barco.getClass().getSimpleName() +
+                " a casilla fila=" + casilla.getFila() + " col=" + casilla.getColumna());
+            casilla.setBarco(barco);
         }
     }
 }

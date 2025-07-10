@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class ComponentesUI {
     
@@ -23,6 +24,7 @@ public class ComponentesUI {
     private JButton btnUnirsePartida;
     private JButton btnEstadoServidor;
     private JButton btnDesconectar;
+    private JButton botonComprobarRival;
     
     private JPanel panelColocacion;
     private JComboBox<String> comboTipoBarco;
@@ -33,6 +35,8 @@ public class ComponentesUI {
     private JButton btnFinalizarColocacion;
     
     private JPanel panelBotones;
+    
+    private JLabel labelEsperaRival;
     
     public void inicializar() {
         crearComponentesEstado();
@@ -288,6 +292,70 @@ public class ComponentesUI {
         } catch (Exception e) {
             System.err.println("[ERROR] Error limpiando selección: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    public void actualizarSelectorBarcos(Map<String, Integer> barcosRestantes) {
+        DefaultComboBoxModel<String> modelo = (DefaultComboBoxModel<String>) comboTipoBarco.getModel();
+        modelo.removeAllElements();
+        for (Map.Entry<String, Integer> entry : barcosRestantes.entrySet()) {
+            if (entry.getValue() > 0) {
+                modelo.addElement(entry.getKey().toUpperCase());
+            }
+        }
+        if (modelo.getSize() > 0) {
+            comboTipoBarco.setSelectedIndex(0);
+        }
+    }
+    
+    public void crearLabelEsperaRival() {
+        labelEsperaRival = new JLabel("Esperando a que el rival termine de colocar...", SwingConstants.CENTER);
+        labelEsperaRival.setFont(new Font("Arial", Font.BOLD, 22));
+        labelEsperaRival.setForeground(Color.BLUE);
+        labelEsperaRival.setVisible(false);
+    }
+    
+    public void mostrarLabelEsperaRival(JPanel panelPrincipal) {
+        if (labelEsperaRival == null) crearLabelEsperaRival();
+        labelEsperaRival.setVisible(true);
+        panelPrincipal.add(labelEsperaRival, BorderLayout.CENTER);
+        panelPrincipal.revalidate();
+        panelPrincipal.repaint();
+    }
+    
+    public void ocultarLabelEsperaRival(JPanel panelPrincipal) {
+        if (labelEsperaRival != null) {
+            labelEsperaRival.setVisible(false);
+            panelPrincipal.remove(labelEsperaRival);
+            panelPrincipal.revalidate();
+            panelPrincipal.repaint();
+        }
+    }
+    
+    private void crearBotonComprobarRival() {
+        botonComprobarRival = new JButton("Comprobar rival");
+        botonComprobarRival.setFont(new Font("Arial", Font.BOLD, 16));
+        botonComprobarRival.setVisible(false);
+    }
+
+    public void mostrarBotonComprobarRival(JPanel panelPrincipal, ActionListener listener) {
+        if (botonComprobarRival == null) crearBotonComprobarRival();
+        for (ActionListener al : botonComprobarRival.getActionListeners()) {
+            botonComprobarRival.removeActionListener(al);
+        }
+        botonComprobarRival.addActionListener(listener);
+        botonComprobarRival.setVisible(true);
+        panelBotones.add(botonComprobarRival);
+        panelBotones.revalidate();
+        panelBotones.repaint();
+    }
+
+    public void ocultarBotonComprobarRival(JPanel panelPrincipal) {
+        if (botonComprobarRival != null) {
+            botonComprobarRival.setVisible(false);
+            panelBotones.remove(botonComprobarRival);
+            panelBotones.revalidate();
+            panelBotones.repaint();
         }
     }
 }

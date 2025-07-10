@@ -7,6 +7,7 @@ public class Fragata extends Barco{
 	private int tamaño = 1;
 	
 	public Fragata (Casilla cas1) {
+		super();
 		this.posiciones.add(cas1);
 		cas1.setBarco(this);
 	}

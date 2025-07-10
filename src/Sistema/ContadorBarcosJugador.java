@@ -56,4 +56,20 @@ public class ContadorBarcosJugador {
         
         return sb.toString();
     }
+
+    public int getPortaviones() { 
+        return portaviones; 
+    }
+
+    public int getSubmarinos() { 
+        return submarinos; 
+    }
+
+    public int getDestructores() { 
+        return destructores; 
+    }
+
+    public int getFragatas() { 
+        return fragatas; 
+    }
 }

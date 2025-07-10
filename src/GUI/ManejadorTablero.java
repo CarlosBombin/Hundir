@@ -2,6 +2,7 @@ package GUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.function.Consumer;
 public class ManejadorTablero {
     
     private static final Color COLOR_CASILLA_VACIA = Color.LIGHT_GRAY;
-    private static final Color COLOR_CASILLA_SELECCIONABLE = Color.BLUE;
+    private static final Color COLOR_CASILLA_SELECCIONABLE = Color.GRAY;
     private static final Font FONT_CASILLA = new Font("Arial", Font.BOLD, 10);
     private static final Dimension CASILLA_SIZE = new Dimension(45, 45);
     
@@ -416,10 +417,161 @@ public class ManejadorTablero {
     private Color obtenerColorBarco(String tipoBarco) {
         switch (tipoBarco.toUpperCase()) {
             case "PORTAVIONES": return new Color(255, 0, 0);  // Rojo
-            case "SUBMARINO": return new Color(0, 0, 255);    // Azul
+            case "SUBMARINO": return new Color(0, 255, 255);    // Cyan
             case "DESTRUCTOR": return new Color(0, 128, 0);   // Verde
             case "FRAGATA": return new Color(255, 165, 0);    // Naranja
             default: return Color.GRAY;
+        }
+    }
+
+    // Panel visual del tablero propio
+    public JPanel getTableroPanelPropio() {
+        return tableroPanel; // El panel que ya usas para tu tablero
+    }
+
+    // Panel visual del tablero rival (debes crear uno si no existe)
+    private JPanel tableroPanelRival;
+
+    public JPanel getTableroPanelRival() {
+        if (tableroPanelRival == null) {
+            tableroPanelRival = crearTableroRival();
+        }
+        return tableroPanelRival;
+    }
+
+    // Ejemplo de creación de tablero rival (solo muestra agua, tocado, hundido, desconocido)
+    private JPanel crearTableroRival() {
+        JPanel panel = new JPanel(new GridLayout(tamaño, tamaño, 2, 2));
+        panel.setBorder(BorderFactory.createTitledBorder("Tablero Rival"));
+        panel.setPreferredSize(new Dimension(400, 400));
+        panel.setBackground(Color.WHITE);
+
+        for (int i = 0; i < tamaño; i++) {
+            for (int j = 0; j < tamaño; j++) {
+                JButton btn = new JButton();
+                btn.setPreferredSize(CASILLA_SIZE);
+                btn.setFont(FONT_CASILLA);
+                btn.setBackground(COLOR_CASILLA_VACIA);
+                btn.setEnabled(true); // Para permitir ataques
+                // Aquí puedes añadir lógica para mostrar el estado real recibido del servidor
+                panel.add(btn);
+            }
+        }
+        return panel;
+    }
+
+    /**
+     * Habilita la selección de casillas en el tablero rival para atacar.
+     * El callback recibirá (fila, columna) de la casilla atacada.
+     */
+    public void habilitarAtaqueRival(BiConsumer<Integer, Integer> callback) {
+        System.out.println("[DEBUG] habilitarAtaqueRival: habilitando botones para atacar");
+        if (tableroPanelRival == null) {
+            tableroPanelRival = crearTableroRival();
+        }
+        Component[] componentes = tableroPanelRival.getComponents();
+        for (int i = 0; i < tamaño; i++) {
+            for (int j = 0; j < tamaño; j++) {
+                int idx = i * tamaño + j;
+                if (idx < componentes.length && componentes[idx] instanceof JButton) {
+                    JButton btn = (JButton) componentes[idx];
+                    if (btn.getText().isEmpty()) {
+                        for (ActionListener al : btn.getActionListeners()) {
+                            btn.removeActionListener(al);
+                        }
+                        btn.setEnabled(true);
+                        final int fila = i;
+                        final int columna = j;
+                        btn.addActionListener(e -> {
+                            for (Component c : componentes) {
+                                if (c instanceof JButton) {
+                                    c.setEnabled(false);
+                                }
+                            }
+                            callback.accept(fila, columna);
+                        });
+                    } else {
+                        btn.setEnabled(false);
+                    }
+                }
+            }
+        }
+    }
+
+    // Marca agua en el tablero rival
+    public void marcarAguaEnRival(int fila, int columna) {
+        if (tableroPanelRival == null) return;
+        int idx = fila * tamaño + columna;
+        Component[] componentes = tableroPanelRival.getComponents();
+        if (idx < componentes.length && componentes[idx] instanceof JButton) {
+            JButton btn = (JButton) componentes[idx];
+            btn.setBackground(Color.CYAN);
+            btn.setText("~");
+            btn.setEnabled(false);
+        }
+    }
+
+    // Marca tocado en el tablero rival
+    public void marcarTocadoEnRival(int fila, int columna) {
+        if (tableroPanelRival == null) return;
+        int idx = fila * tamaño + columna;
+        Component[] componentes = tableroPanelRival.getComponents();
+        if (idx < componentes.length && componentes[idx] instanceof JButton) {
+            JButton btn = (JButton) componentes[idx];
+            btn.setBackground(Color.RED);
+            btn.setText("X");
+            btn.setEnabled(false);
+        }
+    }
+
+    // Marca hundido en el tablero rival
+    public void marcarHundidoEnRival(int fila, int columna) {
+        if (tableroPanelRival == null) return;
+        int idx = fila * tamaño + columna;
+        Component[] componentes = tableroPanelRival.getComponents();
+        if (idx < componentes.length && componentes[idx] instanceof JButton) {
+            JButton btn = (JButton) componentes[idx];
+            btn.setBackground(Color.BLACK);
+            btn.setForeground(Color.WHITE);
+            btn.setText("☠");
+            btn.setEnabled(false);
+        }
+    }
+
+    // Marca agua en el tablero propio
+    public void marcarAguaEnPropio(int fila, int columna) {
+        if (botonesTablero == null) return;
+        JButton btn = botonesTablero[fila][columna];
+        btn.setBackground(Color.CYAN);
+        btn.setText("~");
+    }
+
+    // Marca tocado en el tablero propio
+    public void marcarTocadoEnPropio(int fila, int columna) {
+        if (botonesTablero == null) return;
+        JButton btn = botonesTablero[fila][columna];
+        btn.setBackground(Color.RED);
+        btn.setText("X");
+    }
+
+    // Marca hundido en el tablero propio
+    public void marcarHundidoEnPropio(int fila, int columna) {
+        if (botonesTablero == null) return;
+        JButton btn = botonesTablero[fila][columna];
+        btn.setBackground(Color.BLACK);
+        btn.setForeground(Color.WHITE);
+        btn.setText("☠");
+    }
+
+    // Deshabilita la selección de ataque en el tablero rival
+    public void deshabilitarAtaqueRival() {
+        System.out.println("[DEBUG] deshabilitarAtaqueRival: deshabilitando botones para atacar");
+        if (tableroPanelRival == null) return;
+        Component[] componentes = tableroPanelRival.getComponents();
+        for (Component c : componentes) {
+            if (c instanceof JButton) {
+                c.setEnabled(false);
+            }
         }
     }
 }

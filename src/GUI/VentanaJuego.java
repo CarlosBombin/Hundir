@@ -6,6 +6,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class VentanaJuego extends JFrame {
     
@@ -19,6 +21,8 @@ public class VentanaJuego extends JFrame {
     // Estado del juego
     private boolean colocandoBarcos;
     private Timer colocacionTimer;
+    
+    private JPanel panelPrincipal;
     
     public VentanaJuego(DataInputStream entrada, DataOutputStream salida) {
         this.comunicacion = new ComunicacionServidor(entrada, salida);
@@ -78,7 +82,7 @@ public class VentanaJuego extends JFrame {
     }
     
     private void configurarLayout() {
-        JPanel panelPrincipal = new JPanel(new BorderLayout());
+        panelPrincipal = new JPanel(new BorderLayout());
         
         // Norte: Estado
         panelPrincipal.add(componentes.getLabelEstado(), BorderLayout.NORTH);
@@ -259,7 +263,7 @@ public class VentanaJuego extends JFrame {
     
     private ColocacionBarco crearColocacionDesdeComponentes() {
         try {
-            String tipoBarco = componentes.getTipoBarcoSeleccionado();
+            String tipoBarco = componentes.getTipoBarcoSeleccionado().toUpperCase();
             Integer fila = componentes.getFilaSeleccionada();
             Integer columna = componentes.getColumnaSeleccionada();
             String orientacion = componentes.getOrientacionSeleccionada();
@@ -305,7 +309,6 @@ public class VentanaJuego extends JFrame {
         }
     }
     
-    // AGREGAR método procesarMensajeBarcoColocado:
     private void procesarMensajeBarcoColocado(String mensaje) {
         logger.log("Procesando mensaje adicional: " + mensaje);
     
@@ -314,7 +317,6 @@ public class VentanaJuego extends JFrame {
             logger.log("Barcos restantes: " + restantes);
             componentes.actualizarEstado("Barcos restantes: " + restantes);
             
-            // CRÍTICO: Habilitar botón nuevamente
             componentes.habilitarBotonColocar();
             logger.log("Botón colocar habilitado nuevamente");
             
@@ -326,14 +328,14 @@ public class VentanaJuego extends JFrame {
             
         } else {
             logger.logWarning("Mensaje adicional no reconocido: " + mensaje);
-            componentes.habilitarBotonColocar(); // CRÍTICO: Habilitar botón por defecto
+            componentes.habilitarBotonColocar();
         }
     }
     
     private void finalizarColocacion() {
         comunicacion.enviarComando("finalizar_colocacion", respuesta -> {
             if (respuesta.startsWith("colocacion_finalizada:")) {
-                finalizarFaseColocacion();
+                mostrarPantallaEsperaRival();
             } else if (respuesta.startsWith("partida_ready:")) {
                 iniciarJuego();
             } else {
@@ -345,17 +347,31 @@ public class VentanaJuego extends JFrame {
     private void procesarMensajeServidor(String mensaje) {
         logger.log("=== PROCESANDO MENSAJE SERVIDOR ===");
         logger.log("Mensaje: " + mensaje);
+
+        if (mensaje.startsWith("partida_ready:")) {
+            logger.logSuccess("[DEBUG] Recibido partida_ready, iniciando juego");
+            iniciarJuego();
+            return;
+        }
         
-        // AGREGAR MANEJO ESPECÍFICO PARA BARCOS RESTANTES:
         if (mensaje.startsWith("barcos_restantes:")) {
             String restantes = mensaje.substring(17);
             logger.log("Barcos restantes: " + restantes);
             componentes.actualizarEstado("Barcos restantes: " + restantes);
-            
-            // LÍNEA CRÍTICA: Habilitar el botón para colocar otro barco
-            componentes.habilitarBotonColocar();
-            logger.log("Botón colocar habilitado nuevamente");
-            
+
+            Map<String, Integer> barcosRestantes = parsearBarcosRestantes(restantes);
+            componentes.actualizarSelectorBarcos(barcosRestantes);
+
+            boolean quedanBarcos = barcosRestantes.values().stream().anyMatch(v -> v > 0);
+            if (quedanBarcos) {
+                componentes.habilitarBotonColocar();
+                componentes.deshabilitarBotonFinalizar();
+            } else if (!quedanBarcos) {
+                componentes.deshabilitarBotonColocar();
+                componentes.habilitarBotonFinalizar();
+            }
+            logger.log("Botón colocar " + (quedanBarcos ? "habilitado" : "deshabilitado") +
+                       ", botón finalizar " + (quedanBarcos ? "deshabilitado" : "habilitado"));
             return;
         }
         
@@ -378,6 +394,20 @@ public class VentanaJuego extends JFrame {
             logger.logSuccess("Turno de colocación: " + info);
             componentes.actualizarEstado(info);
             iniciarFaseColocacion();
+            return;
+        }
+        
+        if (mensaje.startsWith("ataque_recibido:")) {
+            procesarAtaqueRecibido(mensaje);
+            return;
+        }
+        
+        if (mensaje.startsWith("fin_partida:")) {
+            String info = mensaje.substring("fin_partida:".length());
+            componentes.actualizarEstado(info);
+            tablero.deshabilitarAtaqueRival();
+            tablero.deshabilitarSeleccion();
+            JOptionPane.showMessageDialog(this, info, "Fin de la partida", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         
@@ -405,7 +435,39 @@ public class VentanaJuego extends JFrame {
     private void iniciarJuego() {
         logger.logSuccess("Partida lista para jugar");
         finalizarFaseColocacion();
-        componentes.actualizarEstado("Juego iniciado");
+        componentes.ocultarLabelEsperaRival(panelPrincipal);
+        componentes.ocultarBotonComprobarRival(panelPrincipal);
+        componentes.actualizarEstado("¡Comienza la batalla!");
+        mostrarTablerosDeBatalla();
+        comunicacion.enviarComando("quien_empieza", respuesta -> {
+            logger.log("[DEBUG] Respuesta quien_empieza: " + respuesta);
+            if (respuesta.startsWith("tu_turno")) {
+                logger.log("[DEBUG] Habilitando tablero rival para atacar (es mi turno)");
+                tablero.habilitarAtaqueRival((fila, columna) -> enviarAtaque(fila, columna));
+            } else {
+                logger.log("[DEBUG] Deshabilitando tablero rival (no es mi turno)");
+                tablero.deshabilitarAtaqueRival();
+            }
+        });
+    }
+
+    private void mostrarTablerosDeBatalla() {
+        JPanel panelBatalla = new JPanel(new GridLayout(1, 2, 20, 0));
+        panelBatalla.add(tablero.getTableroPanelPropio());
+        panelBatalla.add(tablero.getTableroPanelRival());
+        setContentPane(panelBatalla);
+        revalidate();
+        repaint();
+        tablero.habilitarAtaqueRival((fila, columna) -> enviarAtaque(fila, columna));
+    }
+
+    // Método agregado para manejar el ataque al rival
+    private void enviarAtaque(Integer fila, Integer columna) {
+        logger.log("[DEBUG] Intentando atacar en (" + fila + "," + columna + ")");
+        comunicacion.enviarComandoConParametro("atacar", fila + "," + columna, respuesta -> {
+            logger.log("[DEBUG] Respuesta ataque: " + respuesta);
+            procesarRespuestaAtaque(fila, columna, respuesta);
+        });
     }
     
     private void mostrarDialogoPartidas(String partidasStr) {
@@ -436,7 +498,7 @@ public class VentanaJuego extends JFrame {
         String idPartida = partidaSeleccionada.split(" - ")[0];
         
         logger.log("Intentando unirse a partida: " + idPartida);
-        componentes.deshabilitarBotonesMenu(); // Deshabilitar inmediatamente
+        componentes.deshabilitarBotonesMenu();
         
         comunicacion.enviarComandoConParametro("seleccionar_partida", idPartida, resultado -> {
             logger.log("Resultado unirse a partida: " + resultado);
@@ -444,19 +506,18 @@ public class VentanaJuego extends JFrame {
             if (resultado.startsWith("unido_exitoso:")) {
                 logger.logSuccess("Unido exitosamente: " + resultado.substring(14));
                 componentes.actualizarEstado("Unido a partida: " + idPartida);
-                // Botones ya deshabilitados
             } else if (resultado.startsWith("ERROR:")) {
                 logger.logError("Error uniéndose: " + resultado.substring(6));
                 componentes.mostrarError("Error uniéndose a la partida: " + resultado.substring(6));
-                componentes.habilitarBotonesMenu(); // Re-habilitar en caso de error
+                componentes.habilitarBotonesMenu();
             } else if (resultado.startsWith("error")) {
                 logger.logError("Error del servidor: " + resultado.substring(6));
                 componentes.mostrarError("Error del servidor: " + resultado.substring(6));
-                componentes.habilitarBotonesMenu(); // Re-habilitar en caso de error
+                componentes.habilitarBotonesMenu();
             } else {
                 logger.logError("Respuesta inesperada al unirse: " + resultado);
                 componentes.mostrarError("Respuesta inesperada del servidor");
-                componentes.habilitarBotonesMenu(); // Re-habilitar en caso de error
+                componentes.habilitarBotonesMenu();
             }
         });
     }
@@ -511,5 +572,90 @@ public class VentanaJuego extends JFrame {
                 componentes.mostrarError("Error de comunicación: " + error);
             }
         );
+    }
+    
+    // Método para parsear el string
+    private Map<String, Integer> parsearBarcosRestantes(String texto) {
+        Map<String, Integer> mapa = new HashMap<>();
+        String[] partes = texto.split(",");
+        for (String parte : partes) {
+            String[] kv = parte.trim().split(":");
+            if (kv.length == 2) {
+                mapa.put(kv[0].trim().toUpperCase(), Integer.parseInt(kv[1].trim()));
+            }
+        }
+        return mapa;
+    }
+    
+    private void mostrarPantallaEsperaRival() {
+        componentes.actualizarEstado("Esperando a que el rival termine de colocar...");
+        componentes.ocultarPanelColocacion();
+        componentes.mostrarLabelEsperaRival(panelPrincipal);
+
+        // Mostrar el botón y asociar la acción
+        componentes.mostrarBotonComprobarRival(panelPrincipal, e -> comprobarRivalListo());
+    }
+
+    private void comprobarRivalListo() {
+        logger.log("Comprobando si el rival ya está listo...");
+        comunicacion.enviarComando("comprobar_listo", respuesta -> {
+            logger.log("Respuesta comprobar_listo: " + respuesta);
+            if (respuesta.startsWith("partida_ready:")) {
+                iniciarJuego();
+            } else if (respuesta.startsWith("aun_esperando:")) {
+                componentes.actualizarEstado("Aún esperando al rival...");
+            } else {
+                componentes.mostrarError("Respuesta inesperada: " + respuesta);
+            }
+        });
+    }
+
+    private void procesarRespuestaAtaque(int fila, int columna, String respuesta) {
+        if (respuesta.startsWith("resultado_ataque:")) {
+            String resultado = respuesta.substring("resultado_ataque:".length());
+            switch (resultado) {
+                case "agua":
+                    tablero.marcarAguaEnRival(fila, columna);
+                    componentes.actualizarEstado("¡Agua!");
+                    break;
+                case "tocado":
+                    tablero.marcarTocadoEnRival(fila, columna);
+                    componentes.actualizarEstado("¡Tocado!");
+                    break;
+                case "hundido":
+                    tablero.marcarHundidoEnRival(fila, columna);
+                    componentes.actualizarEstado("¡Hundido!");
+                    break;
+                default:
+                    componentes.mostrarError("Respuesta inesperada: " + resultado);
+            }
+            // Deshabilita tablero hasta el siguiente turno
+            tablero.deshabilitarAtaqueRival();
+        }
+    }
+
+    private void procesarAtaqueRecibido(String mensaje) {
+        // mensaje esperado: ataque_recibido:fila,columna,resultado
+        String datos = mensaje.substring("ataque_recibido:".length());
+        String[] partes = datos.split(",");
+        int fila = Integer.parseInt(partes[0]);
+        int columna = Integer.parseInt(partes[1]);
+        String resultado = partes[2];
+
+        switch (resultado) {
+            case "agua":
+                tablero.marcarAguaEnPropio(fila, columna);
+                break;
+            case "tocado":
+                tablero.marcarTocadoEnPropio(fila, columna);
+                break;
+            case "hundido":
+                tablero.marcarHundidoEnPropio(fila, columna);
+                break;
+            default:
+                System.out.println("Error.");
+        }
+
+        tablero.habilitarAtaqueRival((f, c) -> enviarAtaque(f, c));
     }
 }

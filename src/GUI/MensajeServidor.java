@@ -25,6 +25,8 @@ public class MensajeServidor {
         } else if (mensaje.startsWith("error")) {
             manejador.error(mensaje.substring(6));
             
+        } else if (mensaje.startsWith("ataque_recibido:")) {
+            manejador.ataqueRecibido(mensaje);
         } else {
             manejador.mensajeNoReconocido(mensaje);
         }

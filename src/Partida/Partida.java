@@ -15,6 +15,7 @@ public class Partida {
 	private List<Movimiento> movimientos;
 	private Usuario ganador;
 	private Usuario perdedor;
+	private Usuario turnoActual;
 
 	public Partida (Usuario usuarioPrincipal, Usuario usuarioRival) {
 		this.usuarioPrincipal = usuarioPrincipal;
@@ -97,5 +98,31 @@ public class Partida {
 
 	public Tablero getTableroRival() {
 		return this.tableroRival;
+	}
+
+	public Tablero getTableroJugador(Usuario usuario) {
+		if (usuario.equals(this.usuarioPrincipal)) {
+			return this.tableroPrincipal;
+		} else if (usuario.equals(this.usuarioRival)) {
+			return this.tableroRival;
+		} else {
+			return null;
+		}
+	}
+
+	public void inicializarTurno() {
+	    this.turnoActual = usuarioPrincipal;
+	}
+
+	public Usuario getTurnoActual() {
+	    return turnoActual;
+	}
+
+	public void cambiarTurno() {
+	    if (turnoActual.equals(usuarioPrincipal)) {
+	        turnoActual = usuarioRival;
+	    } else {
+	        turnoActual = usuarioPrincipal;
+	    }
 	}
 }

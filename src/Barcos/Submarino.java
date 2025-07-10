@@ -7,6 +7,7 @@ public class Submarino extends Barco{
 	private int tamaño = 3;
 	
 	public Submarino(Casilla cas1, Casilla cas2, Casilla cas3) {
+		super();
 		this.posiciones.add(cas1);
 		cas1.setBarco(this);
 		this.posiciones.add(cas2);
