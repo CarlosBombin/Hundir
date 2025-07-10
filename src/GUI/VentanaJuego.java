@@ -9,19 +9,42 @@ import java.io.DataOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Ventana principal del juego Hundir la Flota del lado cliente.
+ * Gestiona toda la interfaz gráfica del juego, incluyendo la comunicación con el servidor,
+ * la colocación de barcos, los ataques y la visualización de tableros.
+ * Coordina todos los componentes GUI y maneja el flujo completo del juego.
+ * 
+ * @author Sistema Hundir la Flota
+ * @version 1.0
+ */
 public class VentanaJuego extends JFrame {
     
+    /** Manejador de comunicación con el servidor */
     private final ComunicacionServidor comunicacion;
+    /** Gestor de componentes de la interfaz de usuario */
     private final ComponentesUI componentes;
+    /** Manejador de los tableros de juego */
     private final ManejadorTablero tablero;
+    /** Validador local para colocación de barcos */
     private final ValidadorColocacionLocal validador;
+    /** Sistema de logging del juego */
     private GameLogger logger;
     
+    /** Indica si el jugador está actualmente colocando barcos */
     private boolean colocandoBarcos;
+    /** Timer para controlar la fase de colocación */
     private Timer colocacionTimer;
-    
+    /** Panel principal que contiene todos los componentes */
     private JPanel panelPrincipal;
     
+    /**
+     * Constructor que inicializa la ventana principal del juego.
+     * Configura la comunicación con el servidor y todos los componentes necesarios.
+     * 
+     * @param entrada Flujo de entrada de datos desde el servidor
+     * @param salida Flujo de salida de datos hacia el servidor
+     */
     public VentanaJuego(DataInputStream entrada, DataOutputStream salida) {
         this.comunicacion = new ComunicacionServidor(entrada, salida);
         this.componentes = new ComponentesUI();
@@ -32,6 +55,10 @@ public class VentanaJuego extends JFrame {
         inicializar();
     }
     
+    /**
+     * Inicializa todos los componentes de la ventana y la hace visible.
+     * Configura la ventana, componentes, layout, eventos y comunicación.
+     */
     private void inicializar() {
         try {
             configurarVentana();
@@ -54,6 +81,10 @@ public class VentanaJuego extends JFrame {
         }
     }
     
+    /**
+     * Configura las propiedades básicas de la ventana principal.
+     * Establece título, tamaño, posición y comportamiento de cierre.
+     */
     private void configurarVentana() {
         setTitle("Hundir la Flota - Cliente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -69,6 +100,10 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Inicializa todos los componentes de la interfaz de usuario.
+     * Configura componentes UI, tablero y establece dependencias.
+     */
     private void inicializarComponentes() {
         componentes.inicializar();
         tablero.crearTableroVisual(this::seleccionarCasilla);
@@ -76,6 +111,10 @@ public class VentanaJuego extends JFrame {
         tablero.setDependencias(componentes.getLabelEstado(), this::enviarColocacionBarco);
     }
     
+    /**
+     * Configura el layout principal de la ventana.
+     * Organiza componentes en un BorderLayout con paneles específicos.
+     */
     private void configurarLayout() {
         panelPrincipal = new JPanel(new BorderLayout());
         
@@ -94,6 +133,10 @@ public class VentanaJuego extends JFrame {
         add(panelPrincipal);
     }
     
+    /**
+     * Configura los event listeners para todos los componentes interactivos.
+     * Asocia acciones a botones y configura listeners especiales.
+     */
     private void configurarEventos() {
         componentes.setActionListeners(
             e -> crearPartida(),
@@ -107,6 +150,10 @@ public class VentanaJuego extends JFrame {
         componentes.configurarTipoBarcoListener();
     }
     
+    /**
+     * Inicia la comunicación bidireccional con el servidor.
+     * Configura los manejadores de mensajes y errores.
+     */
     private void iniciarComunicacion() {
         comunicacion.iniciarEscucha(
             this::procesarMensajeServidor,
@@ -114,6 +161,10 @@ public class VentanaJuego extends JFrame {
         );
     }
     
+    /**
+     * Crea una nueva partida enviando la solicitud al servidor.
+     * Deshabilita los botones del menú y maneja la respuesta del servidor.
+     */
     private void crearPartida() {
         logger.log("Iniciando creación de partida...");
         componentes.deshabilitarBotonesMenu(); 
@@ -136,6 +187,10 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Solicita las partidas disponibles al servidor para unirse a una.
+     * Maneja la respuesta y muestra el diálogo de selección si hay partidas.
+     */
     private void unirseAPartida() {
         logger.log("=== INICIO UNIRSE A PARTIDA ===");
         logger.log("Solicitando partidas disponibles...");
@@ -170,6 +225,10 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Solicita y muestra el estado actual del servidor.
+     * Útil para diagnóstico y monitoreo de la conexión.
+     */
     private void verEstadoServidor() {
         logger.log("Solicitando estado del servidor...");
         
@@ -185,6 +244,10 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Coloca un barco en el tablero según la selección del usuario.
+     * Valida la colocación localmente antes de enviarla al servidor.
+     */
     private void colocarBarco() {
         logger.log("=== INICIO COLOCAR BARCO ===");
         
@@ -238,6 +301,11 @@ public class VentanaJuego extends JFrame {
         logger.log("=== FIN INICIO COLOCAR BARCO ===");
     }
     
+    /**
+     * Valida si el juego está en estado de colocación de barcos.
+     * 
+     * @return true si se puede colocar barcos, false en caso contrario
+     */
     private boolean validarEstadoColocacion() {
         if (!colocandoBarcos) {
             componentes.mostrarError("No está en fase de colocación");
@@ -246,6 +314,11 @@ public class VentanaJuego extends JFrame {
         return true;
     }
     
+    /**
+     * Crea un objeto ColocacionBarco a partir de los componentes de la UI.
+     * 
+     * @return ColocacionBarco con los datos del usuario o null si hay error
+     */
     private ColocacionBarco crearColocacionDesdeComponentes() {
         try {
             String tipoBarco = componentes.getTipoBarcoSeleccionado().toUpperCase();
@@ -266,6 +339,13 @@ public class VentanaJuego extends JFrame {
         }
     }
     
+    /**
+     * Procesa la respuesta del servidor tras colocar un barco.
+     * Actualiza la interfaz según el resultado de la colocación.
+     * 
+     * @param respuesta Respuesta del servidor
+     * @param colocacion Datos de la colocación realizada
+     */
     private void procesarRespuestaColocacion(String respuesta, ColocacionBarco colocacion) {
         if (respuesta.startsWith("barco_colocado:")) {
             String mensaje = respuesta.substring(15);
@@ -289,6 +369,12 @@ public class VentanaJuego extends JFrame {
         }
     }
     
+    /**
+     * Procesa mensajes adicionales relacionados con la colocación de barcos.
+     * Maneja información sobre barcos restantes y estado de colocación.
+     * 
+     * @param mensaje Mensaje adicional del servidor
+     */
     private void procesarMensajeBarcoColocado(String mensaje) {
         logger.log("Procesando mensaje adicional: " + mensaje);
     
@@ -312,6 +398,10 @@ public class VentanaJuego extends JFrame {
         }
     }
     
+    /**
+     * Finaliza la fase de colocación de barcos y notifica al servidor.
+     * Maneja las diferentes respuestas posibles del servidor.
+     */
     private void finalizarColocacion() {
         comunicacion.enviarComando("finalizar_colocacion", respuesta -> {
             if (respuesta.startsWith("colocacion_finalizada:")) {
@@ -324,6 +414,12 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Procesa todos los mensajes recibidos del servidor.
+     * Distribuye los mensajes a los manejadores específicos según su tipo.
+     * 
+     * @param mensaje Mensaje completo recibido del servidor
+     */
     private void procesarMensajeServidor(String mensaje) {
         logger.log("=== PROCESANDO MENSAJE SERVIDOR ===");
         logger.log("Mensaje: " + mensaje);
@@ -392,6 +488,10 @@ public class VentanaJuego extends JFrame {
         
     }
     
+    /**
+     * Inicia la fase de colocación de barcos.
+     * Habilita los controles necesarios y actualiza el estado.
+     */
     private void iniciarFaseColocacion() {
         colocandoBarcos = true;
         componentes.actualizarEstado("Coloque sus barcos en el tablero");
@@ -401,6 +501,10 @@ public class VentanaJuego extends JFrame {
         tablero.habilitarSeleccion();
     }
     
+    /**
+     * Finaliza la fase de colocación de barcos.
+     * Oculta los controles de colocación y actualiza el estado.
+     */
     private void finalizarFaseColocacion() {
         colocandoBarcos = false;
         componentes.ocultarPanelColocacion();
@@ -408,6 +512,10 @@ public class VentanaJuego extends JFrame {
         componentes.actualizarEstado("Esperando inicio del juego...");
     }
     
+    /**
+     * Inicia la fase de juego/combate.
+     * Configura los tableros de batalla y determina quién ataca primero.
+     */
     private void iniciarJuego() {
         finalizarFaseColocacion();
         componentes.ocultarLabelEsperaRival(panelPrincipal);
@@ -423,6 +531,10 @@ public class VentanaJuego extends JFrame {
         });
     }
 
+    /**
+     * Configura la interfaz para mostrar los tableros de batalla.
+     * Cambia el contenido de la ventana a los tableros de juego.
+     */
     private void mostrarTablerosDeBatalla() {
         JPanel panelBatalla = new JPanel(new GridLayout(1, 2, 20, 0));
         panelBatalla.add(tablero.getTableroPanelRival());
@@ -432,12 +544,24 @@ public class VentanaJuego extends JFrame {
         tablero.habilitarAtaqueRival((fila, columna) -> enviarAtaque(fila, columna));
     }
 
+    /**
+     * Envía un ataque a una coordenada específica del tablero rival.
+     * 
+     * @param fila Fila del ataque
+     * @param columna Columna del ataque
+     */
     private void enviarAtaque(Integer fila, Integer columna) {
         comunicacion.enviarComandoConParametro("atacar", fila + "," + columna, respuesta -> {
             procesarRespuestaAtaque(fila, columna, respuesta);
         });
     }
     
+    /**
+     * Muestra el diálogo de selección de partidas disponibles.
+     * Permite al usuario elegir una partida específica para unirse.
+     * 
+     * @param partidasStr String con las partidas disponibles separadas por delimitadores
+     */
     private void mostrarDialogoPartidas(String partidasStr) {
         
         if (partidasStr == null || partidasStr.trim().isEmpty()) {
@@ -455,14 +579,18 @@ public class VentanaJuego extends JFrame {
         }
     }
     
+    /**
+     * Se une a una partida específica seleccionada por el usuario.
+     * Envía la solicitud al servidor y maneja la respuesta.
+     * 
+     * @param partidaSeleccionada Información de la partida seleccionada
+     */
     private void unirseAPartidaSeleccionada(String partidaSeleccionada) {
         String idPartida = partidaSeleccionada.split(" - ")[0];
         
         componentes.deshabilitarBotonesMenu();
         
         comunicacion.enviarComandoConParametro("seleccionar_partida", idPartida, resultado -> {
-
-            
             if (resultado.startsWith("unido_exitoso:")) {
                 componentes.actualizarEstado("Unido a partida: " + idPartida);
             } else if (resultado.startsWith("ERROR:")) {
@@ -478,24 +606,46 @@ public class VentanaJuego extends JFrame {
         });
     }
     
+    /**
+     * Maneja la selección de una casilla del tablero.
+     * Solo procesa la selección si está en fase de colocación.
+     * 
+     * @param fila Fila de la casilla seleccionada
+     * @param columna Columna de la casilla seleccionada
+     */
     private void seleccionarCasilla(int fila, int columna) {
         if (colocandoBarcos) {
             componentes.seleccionarCasilla(fila, columna);
         }
     }
     
+    /**
+     * Maneja los errores de comunicación con el servidor.
+     * Actualiza el estado y rehabilita controles si es necesario.
+     * 
+     * @param error Descripción del error de comunicación
+     */
     private void manejarErrorComunicacion(String error) {
         componentes.actualizarEstado("Desconectado");
         componentes.habilitarBotonesMenu();
     }
     
+    /**
+     * Cierra la aplicación de forma ordenada.
+     * Cierra la comunicación con el servidor y termina la aplicación.
+     */
     private void cerrarAplicacion() {
         comunicacion.cerrar();
         System.exit(0);
     }
     
+    /**
+     * Envía una colocación de barco al servidor.
+     * Callback utilizado por el manejador de tablero.
+     * 
+     * @param colocacion Datos de la colocación del barco
+     */
     private void enviarColocacionBarco(ColocacionBarco colocacion) {
-        
         comunicacion.enviarColocacionBarco(
             colocacion,
             respuesta -> {                
@@ -506,6 +656,7 @@ public class VentanaJuego extends JFrame {
                     String error = respuesta.substring(17);
                     componentes.mostrarError("Error colocando barco: " + error);
                 } else {
+                    // Respuesta no reconocida
                 }
             },
             error -> {
@@ -514,6 +665,13 @@ public class VentanaJuego extends JFrame {
         );
     }
     
+    /**
+     * Parsea un string con información de barcos restantes.
+     * Convierte el formato "TIPO:CANTIDAD,TIPO:CANTIDAD" en un Map.
+     * 
+     * @param texto String con la información de barcos restantes
+     * @return Map con tipos de barco y cantidades restantes
+     */
     private Map<String, Integer> parsearBarcosRestantes(String texto) {
         Map<String, Integer> mapa = new HashMap<>();
         String[] partes = texto.split(",");
@@ -526,6 +684,10 @@ public class VentanaJuego extends JFrame {
         return mapa;
     }
     
+    /**
+     * Muestra la pantalla de espera mientras el rival termina de colocar.
+     * Configura los elementos visuales para la fase de espera.
+     */
     private void mostrarPantallaEsperaRival() {
         componentes.actualizarEstado("Esperando a que el rival termine de colocar...");
         componentes.ocultarPanelColocacion();
@@ -533,6 +695,10 @@ public class VentanaJuego extends JFrame {
         componentes.mostrarBotonComprobarRival(panelPrincipal, e -> comprobarRivalListo());
     }
 
+    /**
+     * Comprueba si el rival ha terminado de colocar sus barcos.
+     * Consulta al servidor sobre el estado de preparación del rival.
+     */
     private void comprobarRivalListo() {
         comunicacion.enviarComando("comprobar_listo", respuesta -> {
             if (respuesta.startsWith("partida_ready:")) {
@@ -545,6 +711,14 @@ public class VentanaJuego extends JFrame {
         });
     }
 
+    /**
+     * Procesa la respuesta del servidor tras realizar un ataque.
+     * Actualiza el tablero rival según el resultado del ataque.
+     * 
+     * @param fila Fila del ataque realizado
+     * @param columna Columna del ataque realizado
+     * @param respuesta Respuesta del servidor con el resultado
+     */
     private void procesarRespuestaAtaque(int fila, int columna, String respuesta) {
         if (respuesta.startsWith("resultado_ataque:")) {
             String resultado = respuesta.substring("resultado_ataque:".length());
@@ -568,6 +742,12 @@ public class VentanaJuego extends JFrame {
         }
     }
 
+    /**
+     * Procesa los ataques recibidos del rival.
+     * Actualiza el tablero propio según el resultado del ataque enemigo.
+     * 
+     * @param mensaje Mensaje del servidor con los detalles del ataque
+     */
     private void procesarAtaqueRecibido(String mensaje) {
         String datos = mensaje.substring("ataque_recibido:".length());
         String[] partes = datos.split(",");
@@ -586,7 +766,7 @@ public class VentanaJuego extends JFrame {
                 tablero.marcarHundidoEnPropio(fila, columna);
                 break;
             default:
-                System.out.println("Error.");
+                System.out.println("Error procesando ataque recibido.");
         }
 
         tablero.habilitarAtaqueRival((f, c) -> enviarAtaque(f, c));

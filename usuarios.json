@@ -78,5 +78,15 @@
     "name": "Login",
     "password": "Login",
     "esNuevo": false
+  },
+  {
+    "name": "Paul",
+    "password": "Paul",
+    "esNuevo": false
+  },
+  {
+    "name": "Carlos",
+    "password": "Carlos",
+    "esNuevo": false
   }
 ]

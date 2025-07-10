@@ -9,14 +9,41 @@ import Cliente.Usuario;
 import Partida.Partida;
 import Tablero.Tablero;
 
+/**
+ * Clase que maneja la conexión individual de cada cliente al servidor.
+ * Extiende Thread para permitir el manejo concurrente de múltiples clientes.
+ * Gestiona toda la comunicación bidireccional entre un cliente específico y el servidor,
+ * incluyendo autenticación, comandos de juego y sincronización de partidas.
+ * 
+ * Funcionalidades principales:
+ * - Autenticación de usuarios (login/registro)
+ * - Gestión de comandos de partida (crear, unirse, estado)
+ * - Manejo de la fase de colocación de barcos
+ * - Procesamiento de ataques y notificaciones
+ * - Limpieza automática de recursos al desconectar
+ * 
+ * @author Sistema Hundir la Flota
+ * @version 1.0
+ */
 class Connection extends Thread {
     
+    /** Flujo de entrada de datos desde el cliente */
     private DataInputStream entrada;
+    /** Flujo de salida de datos hacia el cliente */
     private DataOutputStream salida;
+    /** Socket de conexión con el cliente */
     private Socket clienteSocket;
+    /** Usuario autenticado para esta conexión */
     private Usuario usuarioActual;
+    /** ID de la partida actual del usuario */
     private String partidaActual;
     
+    /**
+     * Constructor que inicializa una nueva conexión con un cliente.
+     * Configura los flujos de entrada y salida, establece timeout y inicializa variables.
+     * 
+     * @param aClienteSocket Socket del cliente conectado
+     */
     public Connection(Socket aClienteSocket) {
         try {
             clienteSocket = aClienteSocket;
@@ -32,6 +59,11 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Método principal del hilo que maneja el ciclo de vida de la conexión.
+     * Ejecuta la autenticación, procesa comandos del cliente en un bucle
+     * y maneja la limpieza de recursos al finalizar.
+     */
     @Override
     public void run() {
         try {
@@ -136,10 +168,23 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Establece el usuario autenticado para esta conexión.
+     * Método utilitario para asignar el usuario después de la autenticación.
+     * 
+     * @param usuario Usuario que ha sido autenticado exitosamente
+     */
     public void setUsuarioAutenticado(Usuario usuario) {
         this.usuarioActual = usuario;
     }
     
+    /**
+     * Maneja el proceso completo de autenticación del usuario.
+     * Solicita credenciales al cliente y procesa registro o login según corresponda.
+     * 
+     * @return true si la autenticación fue exitosa, false en caso contrario
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private boolean autenticarUsuario() throws IOException {
         try {
             salida.writeUTF("auth_required");
@@ -165,6 +210,15 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Procesa una solicitud de registro de nuevo usuario.
+     * Valida que el usuario no exista y lo registra en el sistema.
+     * 
+     * @param nombre Nombre del usuario a registrar
+     * @param contraseña Contraseña del usuario
+     * @return true si el registro fue exitoso, false si el usuario ya existe
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private boolean procesarRegistro(String nombre, String contraseña) throws IOException {
         if (Servidor.registrarUsuario(nombre, contraseña)) {
             usuarioActual = new Usuario(nombre, contraseña);
@@ -177,6 +231,15 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Procesa una solicitud de login de usuario existente.
+     * Valida credenciales y verifica que el usuario no esté ya conectado.
+     * 
+     * @param nombre Nombre del usuario
+     * @param contraseña Contraseña del usuario
+     * @return true si el login fue exitoso, false en caso contrario
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private boolean procesarLogin(String nombre, String contraseña) throws IOException {
         Usuario usuario = Servidor.validarUsuario(nombre, contraseña);
         if (usuario != null) {
@@ -195,6 +258,12 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Muestra el menú principal del juego al cliente.
+     * Envía las opciones disponibles después de la autenticación exitosa.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void mostrarMenuPrincipal() throws IOException {
         String menu = "=== HUNDIR LA FLOTA ===\n" +
                      "Bienvenido: " + usuarioActual.getName() + "\n" +
@@ -206,6 +275,12 @@ class Connection extends Thread {
         salida.writeUTF("menu:" + menu);
     }
     
+    /**
+     * Crea una nueva partida con el usuario actual como creador.
+     * Registra la partida en el servidor e inicia la espera de rival.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void crearNuevaPartida() throws IOException {
         String idPartida = Servidor.crearPartida(usuarioActual);
         partidaActual = idPartida;
@@ -219,6 +294,12 @@ class Connection extends Thread {
         esperarRival(idPartida);
     }
     
+    /**
+     * Envía al cliente la lista de partidas disponibles para unirse.
+     * Consulta el servidor por partidas que necesitan un segundo jugador.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void mostrarPartidasDisponibles() throws IOException {
         List<String> partidas = Servidor.obtenerPartidasDisponibles();
         
@@ -231,6 +312,13 @@ class Connection extends Thread {
         salida.flush();
     }
     
+    /**
+     * Une al usuario a una partida específica seleccionada.
+     * Valida que la partida exista y tenga espacio disponible.
+     * 
+     * @param idPartida ID de la partida a la cual unirse
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void unirseAPartidaSeleccionada(String idPartida) throws IOException {
         
         if (Servidor.unirseAPartida(idPartida, usuarioActual)) {
@@ -252,6 +340,12 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Notifica a ambos jugadores que la partida está completa.
+     * Envía información del rival y inicia la fase de colocación.
+     * 
+     * @param partida Partida que ya tiene ambos jugadores
+     */
     private void notificarPartidaCompleta(Partida partida) {
         try {
             String nombreRival = usuarioActual.equals(partida.getUsuarioPrincipal()) 
@@ -280,6 +374,12 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Inicia un hilo separado para esperar que se una un rival a la partida.
+     * Monitorea periódicamente si la partida se ha completado con un segundo jugador.
+     * 
+     * @param idPartida ID de la partida que espera rival
+     */
     private void esperarRival(String idPartida) {
         new Thread(() -> {
             try {
@@ -322,6 +422,12 @@ class Connection extends Thread {
         }, "EsperarRival-" + idPartida).start();
     }
     
+    /**
+     * Inicia la fase de colocación de barcos para el usuario.
+     * Valida que la partida esté lista y envía las instrucciones correspondientes.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void iniciarFaseColocacion() throws IOException {
         if (partidaActual == null) {
             salida.writeUTF("error:No estás en ninguna partida");
@@ -357,12 +463,24 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Envía las instrucciones de colocación de barcos al cliente.
+     * Especifica los tipos y cantidades de barcos que debe colocar.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void enviarInstruccionesColocacion() throws IOException {
         String instrucciones = "Portaviones:1, Submarinos:2, Destructores:3, Fragatas:4";
         salida.writeUTF("instrucciones:" + instrucciones);
         salida.flush();
     }
     
+    /**
+     * Procesa una solicitud de colocación de barco del cliente.
+     * Valida la colocación, actualiza el tablero y responde con el resultado.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void procesarColocacionBarco() throws IOException {
         if (partidaActual == null) {
             salida.writeUTF("error_colocacion:No estás en ninguna partida");
@@ -400,6 +518,16 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Valida que los datos de entrada para colocación de barco sean correctos.
+     * Verifica tipo de barco, coordenadas dentro del tablero y orientación válida.
+     * 
+     * @param tipoBarco Tipo de barco a validar
+     * @param fila Fila donde colocar el barco
+     * @param columna Columna donde colocar el barco
+     * @param orientacion Orientación del barco (HORIZONTAL/VERTICAL)
+     * @return true si todos los datos son válidos, false en caso contrario
+     */
     private boolean esEntradaValida(String tipoBarco, int fila, int columna, String orientacion) {
         if (tipoBarco == null || 
             (!tipoBarco.equals("PORTAVIONES") && !tipoBarco.equals("SUBMARINO") && 
@@ -419,6 +547,12 @@ class Connection extends Thread {
         return true;
     }
     
+    /**
+     * Verifica y comunica al cliente los barcos restantes por colocar.
+     * Método utilitario para mantener actualizado el estado de colocación.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void verificarBarcosRestantes() throws IOException {
         try {
             boolean completado = false;
@@ -453,6 +587,12 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Finaliza la fase de colocación de barcos del usuario.
+     * Verifica que todos los barcos estén colocados y coordina el inicio del juego.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void finalizarColocacionBarcos() throws IOException {
         if (partidaActual == null) {
             salida.writeUTF("error:No estás en ninguna partida");
@@ -514,6 +654,12 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Procesa la finalización de colocación cuando ambos jugadores están listos.
+     * Coordina el inicio de la fase de combate entre ambos jugadores.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void procesarFinalizarColocacion() throws IOException {
         boolean completo = Servidor.finalizarColocacionUsuario(partidaActual, usuarioActual);
 
@@ -548,11 +694,22 @@ class Connection extends Thread {
         }
     }
 
+    /**
+     * Envía notificación de que la partida está lista para comenzar.
+     * Método público para ser llamado desde otras conexiones o el servidor.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     public void enviarPartidaReady() throws IOException {
         salida.writeUTF("partida_ready:Ambos jugadores listos - ¡Comienza la batalla!");
         salida.flush();
     }
     
+    /**
+     * Limpia todos los recursos asociados con esta conexión.
+     * Cierra flujos de datos, socket y desregistra al usuario del servidor.
+     * Se ejecuta automáticamente al finalizar la conexión.
+     */
     private void limpiarRecursos() {
         
         if (usuarioActual != null) {
@@ -594,18 +751,40 @@ class Connection extends Thread {
         }
     }
     
+    /**
+     * Obtiene el usuario autenticado para esta conexión.
+     * 
+     * @return Usuario actual o null si no está autenticado
+     */
     public Usuario getUsuarioActual() {
         return usuarioActual;
     }
 
+    /**
+     * Obtiene el flujo de salida de datos para esta conexión.
+     * Utilizado por otras partes del sistema para enviar datos directamente.
+     * 
+     * @return DataOutputStream de esta conexión
+     */
     public DataOutputStream getSalida() {
         return salida;
     }
 
+    /**
+     * Obtiene el ID de la partida actual del usuario.
+     * 
+     * @return ID de la partida actual o null si no está en ninguna partida
+     */
     public String getPartidaActual() {
         return partidaActual;
     }
 
+    /**
+     * Procesa un ataque del usuario hacia el rival.
+     * Valida que sea el turno del usuario, ejecuta el ataque y notifica el resultado.
+     * 
+     * @throws IOException Si ocurre un error de comunicación
+     */
     private void procesarAtaque() throws IOException {
         String coords = entrada.readUTF();
         String[] partes = coords.split(",");
@@ -649,6 +828,14 @@ class Connection extends Thread {
         Servidor.cambiarTurno(partidaActual);
     }
 
+    /**
+     * Notifica a este cliente que ha recibido un ataque del rival.
+     * Envía las coordenadas atacadas y el resultado del ataque.
+     * 
+     * @param fila Fila atacada por el rival
+     * @param columna Columna atacada por el rival
+     * @param resultado Resultado del ataque (agua, tocado, hundido)
+     */
     public void notificarAtaqueRecibido(int fila, int columna, String resultado) {
         try {
             salida.writeUTF("ataque_recibido:" + fila + "," + columna + "," + resultado);

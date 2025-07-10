@@ -12,11 +12,29 @@ import javax.swing.JOptionPane;
 import GUI.DialogoAutenticacion;
 import GUI.VentanaJuego;
 
+/**
+ * Clase principal del cliente del juego Hundir la Flota.
+ * Gestiona la conexión con el servidor, la autenticación de usuarios
+ * y el inicio de la interfaz gráfica del juego.
+ * 
+ * @author Sistema Hundir la Flota
+ * @version 1.0
+ */
 public class Cliente {
+    
+    /** Socket de conexión con el servidor */
     static Socket s = null;
+    /** Puerto del servidor al que se conecta el cliente */
     static int serverPort = 7896;
+    /** Usuario actualmente conectado */
     private static Usuario miUsuario;
 
+    /**
+     * Método principal que inicia la aplicación cliente.
+     * Configura la interfaz gráfica y muestra el diálogo de autenticación.
+     * 
+     * @param args Argumentos de línea de comandos (no utilizados)
+     */
     public static void main(String args[]) {
         configurarLookAndFeel();
 
@@ -40,13 +58,24 @@ public class Cliente {
         });
     }
 
+    /**
+     * Configura el Look and Feel de la interfaz gráfica.
+     * Establece el tema Nimbus para una apariencia moderna.
+     */
     private static void configurarLookAndFeel() {
         try {
             UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
         } catch (Exception e) {
+            // Usar look and feel por defecto si falla
         }
     }
 
+    /**
+     * Establece la conexión con el servidor y autentica al usuario.
+     * Si la autenticación es exitosa, inicia la ventana del juego.
+     * 
+     * @param usuario Usuario a autenticar
+     */
     private static void conectarAlServidor(Usuario usuario) {
         try {
             s = new Socket("localhost", serverPort);
@@ -78,6 +107,15 @@ public class Cliente {
         }
     }
 
+    /**
+     * Autentica al usuario con el servidor mediante login o registro.
+     * Envía las credenciales y procesa la respuesta del servidor.
+     * 
+     * @param usuario Usuario a autenticar
+     * @param entrada Flujo de entrada del servidor
+     * @param salida Flujo de salida al servidor
+     * @return true si la autenticación es exitosa, false en caso contrario
+     */
     private static boolean autenticarConServidor(Usuario usuario, DataInputStream entrada, DataOutputStream salida) {
         try {
             String respuesta = entrada.readUTF();
@@ -111,23 +149,44 @@ public class Cliente {
         }
     }
 
+    /**
+     * Obtiene el usuario actualmente conectado.
+     * 
+     * @return Usuario actual o null si no hay usuario conectado
+     */
     public static Usuario getUsuarioActual() {
         return miUsuario;
     }
 
+    /**
+     * Cierra la conexión con el servidor.
+     * Método público para cerrar la conexión desde otras clases.
+     */
     public static void cerrarConexion() {
         cerrarConexionSegura();
     }
 
+    /**
+     * Cierra la conexión con el servidor de forma segura.
+     * Verifica que el socket existe y está abierto antes de cerrarlo.
+     */
     private static void cerrarConexionSegura() {
         if (s != null && !s.isClosed()) {
             try {
                 s.close();
             } catch (IOException e) {
+                // Ignorar errores al cerrar
             }
         }
     }
 
+    /**
+     * Valida si un tipo de barco es válido en el juego.
+     * Tipos válidos: PORTAVIONES, SUBMARINO, DESTRUCTOR, FRAGATA.
+     * 
+     * @param tipo Tipo de barco a validar
+     * @return true si el tipo es válido, false en caso contrario
+     */
     public static boolean esTipoBarcoValido(String tipo) {
         if (tipo == null || tipo.trim().isEmpty()) {
             return false;
@@ -138,6 +197,11 @@ public class Cliente {
                tipoUpper.equals("DESTRUCTOR") || tipoUpper.equals("FRAGATA");
     }
 
+    /**
+     * Obtiene información sobre la conexión actual.
+     * 
+     * @return String con información de conexión o estado de desconexión
+     */
     public static String getInfoConexion() {
         if (s != null && !s.isClosed()) {
             return "Conectado a " + s.getRemoteSocketAddress();
@@ -146,14 +210,28 @@ public class Cliente {
         }
     }
 
+    /**
+     * Verifica si el cliente está conectado al servidor.
+     * 
+     * @return true si hay conexión activa, false en caso contrario
+     */
     public static boolean estaConectado() {
         return s != null && !s.isClosed() && s.isConnected();
     }
 
+    /**
+     * Obtiene información del servidor configurado.
+     * 
+     * @return String con la dirección y puerto del servidor
+     */
     public static String getServidorInfo() {
         return "localhost:" + serverPort;
     }
 
+    /**
+     * Muestra información de debug sobre el estado de la conexión.
+     * Útil para diagnóstico y resolución de problemas.
+     */
     public static void debugEstadoConexion() {
         System.out.println("=== DEBUG ESTADO CONEXIÓN ===");
         System.out.println("Socket: " + (s != null ? "Existe" : "NULL"));
@@ -163,11 +241,18 @@ public class Cliente {
         System.out.println("=============================");
     }
 
+    /**
+     * Envía información de debug al servidor.
+     * Comunica al servidor el estado actual del cliente.
+     * 
+     * @param salida Flujo de salida al servidor
+     */
     public static void enviarDebugAlServidor(DataOutputStream salida) {
         try {
             salida.writeUTF("debug_cliente");
             salida.writeUTF("Cliente activo: " + (miUsuario != null ? miUsuario.getName() : "sin_usuario"));
         } catch (IOException e) {
+            // Ignorar errores de comunicación
         }
     }
 }
